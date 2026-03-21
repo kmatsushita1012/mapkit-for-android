@@ -29,6 +29,8 @@ android {
 dependencies {
     api(project(":source:mapkit-android-core"))
     implementation(project(":source:mapkit-android-webview"))
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.play.services.location)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.tooling.preview)

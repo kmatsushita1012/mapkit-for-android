@@ -85,6 +85,21 @@ class MKBridgeWebView @JvmOverloads constructor(
         flushPendingState()
     }
 
+    fun applyUserLocation(
+        coordinate: MKCoordinate,
+        followsHeading: Boolean,
+        showsAccuracyRing: Boolean
+    ) {
+        if (!isPageReady || !hasInitCalled) return
+        val payload = JSONObject()
+            .put("lat", coordinate.latitude)
+            .put("lng", coordinate.longitude)
+            .put("followsHeading", followsHeading)
+            .put("showsAccuracyRing", showsAccuracyRing)
+            .toString()
+        evaluateJavascriptSafe("window.MKBridge && window.MKBridge.applyUserLocation($payload);")
+    }
+
     private fun flushPendingState() {
         val latest = pendingState ?: return
         val latestInternal = MKBridgeMapper.toInternal(latest)
@@ -149,6 +164,9 @@ class MKBridgeWebView @JvmOverloads constructor(
             .put("annotations", annotations)
             .put("overlays", overlays)
             .put("showsTraffic", state.options.showsTraffic)
+            .put("userLocationEnabled", state.options.userLocation.isEnabled)
+            .put("userLocationFollowsHeading", state.options.userLocation.followsHeading)
+            .put("userLocationShowsAccuracyRing", state.options.userLocation.showsAccuracyRing)
             .toString()
     }
 

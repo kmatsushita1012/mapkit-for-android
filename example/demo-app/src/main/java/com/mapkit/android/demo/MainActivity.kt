@@ -1,8 +1,12 @@
 package com.mapkit.android.demo
 
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -13,9 +17,11 @@ import com.mapkit.android.model.MKCoordinate
 import com.mapkit.android.model.MKCoordinateRegion
 import com.mapkit.android.model.MKMapErrorCause
 import com.mapkit.android.model.MKMapEvent
+import com.mapkit.android.model.MKMapOptions
 import com.mapkit.android.model.MKMapState
 import com.mapkit.android.model.MKOverlayStyle
 import com.mapkit.android.model.MKPolylineOverlay
+import com.mapkit.android.model.MKUserLocationOptions
 import com.mapkit.android.model.MKAnnotation
 
 class MainActivity : ComponentActivity() {
@@ -52,7 +58,31 @@ class MainActivity : ComponentActivity() {
                                 ),
                                 style = MKOverlayStyle(strokeColorHex = "#0EA5E9", strokeWidth = 4.0)
                             )
+                        ),
+                        options = MKMapOptions(
+                            userLocation = MKUserLocationOptions(isEnabled = true)
                         )
+                    )
+                )
+            }
+
+            val permissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestMultiplePermissions()
+            ) { granted ->
+                val enabled = granted[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                    granted[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+                state = state.copy(
+                    options = state.options.copy(
+                        userLocation = state.options.userLocation.copy(isEnabled = enabled)
+                    )
+                )
+            }
+
+            LaunchedEffect(Unit) {
+                permissionLauncher.launch(
+                    arrayOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
                     )
                 )
             }

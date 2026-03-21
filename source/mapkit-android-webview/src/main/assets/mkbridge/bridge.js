@@ -11,6 +11,11 @@
     },
     annotations: [],
     overlays: [],
+    userLocation: null,
+    userLocationEnabled: false,
+    userLocationFollowsHeading: false,
+    userLocationShowsAccuracyRing: true,
+    userLocationAnnotation: null,
     annotationsById: {},
     overlaysById: {},
     annotationHashesById: {},
@@ -39,6 +44,7 @@
       "span: " + state.region.latDelta.toFixed(5) + ", " + state.region.lngDelta.toFixed(5) + "\n" +
       "annotations: " + Object.keys(state.annotationsById).length + "\n" +
       "overlays: " + Object.keys(state.overlaysById).length + "\n" +
+      "userLocation: " + (state.userLocation ? "set" : "unset") + "\n" +
       "token: " + (state.token ? "set" : "unset");
   }
 
@@ -220,11 +226,44 @@
     });
   }
 
+  function applyMapUserLocationConfig() {
+    if (!state.mapReady || !state.map) return;
+    try {
+      if (typeof state.map.showsUserLocation !== "undefined") {
+        state.map.showsUserLocation = !!state.userLocationEnabled;
+      }
+    } catch (_) {}
+  }
+
+  function applyUserLocationPoint() {
+    if (!state.mapReady || !state.map) return;
+    if (!state.userLocationEnabled || !state.userLocation) {
+      if (state.userLocationAnnotation) {
+        try {
+          state.map.removeAnnotation(state.userLocationAnnotation);
+        } catch (_) {}
+        state.userLocationAnnotation = null;
+      }
+      return;
+    }
+    const c = new window.mapkit.Coordinate(state.userLocation.lat, state.userLocation.lng);
+    if (!state.userLocationAnnotation) {
+      state.userLocationAnnotation = new window.mapkit.MarkerAnnotation(c, { title: "Current Location" });
+      try {
+        state.map.addAnnotation(state.userLocationAnnotation);
+      } catch (_) {}
+    } else {
+      state.userLocationAnnotation.coordinate = c;
+    }
+  }
+
   function applyStateToMap() {
     if (!state.mapReady || !state.map) return;
     applyMapKitRegion(state.region);
     reconcileAnnotations(state.annotations || []);
     reconcileOverlays(state.overlays || []);
+    applyMapUserLocationConfig();
+    applyUserLocationPoint();
     renderStatus();
   }
 
@@ -246,11 +285,36 @@
       if (payload && payload.region) state.region = payload.region;
       if (payload && payload.annotations) state.annotations = payload.annotations;
       if (payload && payload.overlays) state.overlays = payload.overlays;
+      if (payload && typeof payload.userLocationEnabled !== "undefined") {
+        state.userLocationEnabled = !!payload.userLocationEnabled;
+      }
+      if (payload && typeof payload.userLocationFollowsHeading !== "undefined") {
+        state.userLocationFollowsHeading = !!payload.userLocationFollowsHeading;
+      }
+      if (payload && typeof payload.userLocationShowsAccuracyRing !== "undefined") {
+        state.userLocationShowsAccuracyRing = !!payload.userLocationShowsAccuracyRing;
+      }
       try {
         applyStateToMap();
       } catch (e) {
         emitBridgeError(e && e.message ? e.message : e);
       }
+    },
+    applyUserLocation: function (payload) {
+      if (!payload) return;
+      state.userLocation = {
+        lat: payload.lat,
+        lng: payload.lng,
+      };
+      if (typeof payload.followsHeading !== "undefined") {
+        state.userLocationFollowsHeading = !!payload.followsHeading;
+      }
+      if (typeof payload.showsAccuracyRing !== "undefined") {
+        state.userLocationShowsAccuracyRing = !!payload.showsAccuracyRing;
+      }
+      applyUserLocationPoint();
+      emit({ type: "userLocationUpdated", lat: payload.lat, lng: payload.lng });
+      renderStatus();
     },
     simulatePan: function () {
       if (state.mapReady) {
