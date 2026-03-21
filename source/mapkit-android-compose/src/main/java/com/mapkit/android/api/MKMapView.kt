@@ -24,10 +24,29 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.mapkit.android.model.MKCoordinate
 
+class MKMapDebugController {
+    internal var onSimulateAnnotationTap: (() -> Unit)? = null
+    internal var onSimulateOverlayTap: (() -> Unit)? = null
+    internal var onSimulatePan: (() -> Unit)? = null
+
+    fun simulateAnnotationTap() {
+        onSimulateAnnotationTap?.invoke()
+    }
+
+    fun simulateOverlayTap() {
+        onSimulateOverlayTap?.invoke()
+    }
+
+    fun simulatePan() {
+        onSimulatePan?.invoke()
+    }
+}
+
 @Composable
 fun MKMapView(
     state: MKMapState,
     onEvent: (MKMapEvent) -> Unit,
+    debugController: MKMapDebugController? = null,
     modifier: Modifier = Modifier
 ) {
     val latestOnEvent = rememberUpdatedState(onEvent)
@@ -40,6 +59,11 @@ fun MKMapView(
             MKBridgeWebView(context).also { webView ->
                 webViewRef.value = webView
                 webView.setEventListener { event -> latestOnEvent.value(event) }
+                debugController?.apply {
+                    onSimulateAnnotationTap = { webView.simulateAnnotationTap() }
+                    onSimulateOverlayTap = { webView.simulateOverlayTap() }
+                    onSimulatePan = { webView.simulatePan() }
+                }
                 val token = MKMapKit.currentTokenOrNull()
                 if (token != null) {
                     webView.ensureInitialized(token)
@@ -52,6 +76,11 @@ fun MKMapView(
         update = { webView ->
             webViewRef.value = webView
             webView.setEventListener { event -> latestOnEvent.value(event) }
+            debugController?.apply {
+                onSimulateAnnotationTap = { webView.simulateAnnotationTap() }
+                onSimulateOverlayTap = { webView.simulateOverlayTap() }
+                onSimulatePan = { webView.simulatePan() }
+            }
             val token = MKMapKit.currentTokenOrNull()
             if (token != null) {
                 webView.ensureInitialized(token)

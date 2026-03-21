@@ -114,6 +114,18 @@ class MKBridgeWebView @JvmOverloads constructor(
         evaluateJavascript(script, ValueCallback { })
     }
 
+    fun simulateAnnotationTap() {
+        evaluateJavascriptSafe("window.MKBridge && window.MKBridge.simulateAnnotationTap && window.MKBridge.simulateAnnotationTap();")
+    }
+
+    fun simulateOverlayTap() {
+        evaluateJavascriptSafe("window.MKBridge && window.MKBridge.simulateOverlayTap && window.MKBridge.simulateOverlayTap();")
+    }
+
+    fun simulatePan() {
+        evaluateJavascriptSafe("window.MKBridge && window.MKBridge.simulatePan && window.MKBridge.simulatePan();")
+    }
+
     private fun serializeState(state: MKMapState): String {
         val regionJson = JSONObject()
             .put("centerLat", state.region.center.latitude)

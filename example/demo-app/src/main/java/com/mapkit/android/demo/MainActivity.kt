@@ -6,12 +6,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.mapkit.android.api.MKMapKit
+import com.mapkit.android.api.MKMapDebugController
 import com.mapkit.android.api.MKMapView
 import com.mapkit.android.model.MKCoordinate
 import com.mapkit.android.model.MKCoordinateRegion
@@ -65,6 +75,7 @@ class MainActivity : ComponentActivity() {
                     )
                 )
             }
+            val debugController = remember { MKMapDebugController() }
 
             val permissionLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -87,32 +98,60 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            MKMapView(
-                state = state,
-                onEvent = { event ->
-                    when (event) {
-                        is MKMapEvent.RegionDidChange -> if (event.settled) {
-                            state = state.copy(region = event.region)
-                        }
-
-                        is MKMapEvent.AnnotationTapped -> {
-                            android.util.Log.d("MKDemo", "Annotation tapped: ${event.id}")
-                        }
-
-                        is MKMapEvent.OverlayTapped -> {
-                            android.util.Log.d("MKDemo", "Overlay tapped: ${event.id}")
-                        }
-
-                        is MKMapEvent.MapError -> {
-                            if (event.cause is MKMapErrorCause.BridgeFailure) {
-                                android.util.Log.e("MKDemo", "Bridge error: ${(event.cause as MKMapErrorCause.BridgeFailure).message}")
-                            }
-                        }
-
-                        else -> Unit
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Button(onClick = { debugController.simulateAnnotationTap() }) {
+                        Text("Annotation Tap")
+                    }
+                    Button(
+                        onClick = { debugController.simulateOverlayTap() },
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text("Overlay Tap")
+                    }
+                    Button(
+                        onClick = { debugController.simulatePan() },
+                        modifier = Modifier.padding(start = 8.dp)
+                    ) {
+                        Text("Simulate Pan")
                     }
                 }
-            )
+
+                MKMapView(
+                    state = state,
+                    debugController = debugController,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    onEvent = { event ->
+                        when (event) {
+                            is MKMapEvent.RegionDidChange -> if (event.settled) {
+                                state = state.copy(region = event.region)
+                            }
+
+                            is MKMapEvent.AnnotationTapped -> {
+                                android.util.Log.d("MKDemo", "Annotation tapped: ${event.id}")
+                            }
+
+                            is MKMapEvent.OverlayTapped -> {
+                                android.util.Log.d("MKDemo", "Overlay tapped: ${event.id}")
+                            }
+
+                            is MKMapEvent.MapError -> {
+                                if (event.cause is MKMapErrorCause.BridgeFailure) {
+                                    android.util.Log.e("MKDemo", "Bridge error: ${(event.cause as MKMapErrorCause.BridgeFailure).message}")
+                                }
+                            }
+
+                            else -> Unit
+                        }
+                    }
+                )
+            }
         }
     }
 }
