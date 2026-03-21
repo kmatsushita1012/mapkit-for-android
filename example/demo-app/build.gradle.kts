@@ -24,7 +24,10 @@ android {
         val mapToken = localProps.getProperty("MAPKIT_JS_TOKEN")
             ?: System.getenv("MAPKIT_JS_TOKEN")
             ?: "DUMMY_TOKEN_FOR_DEMO"
-        buildConfigField("String", "MAPKIT_JS_TOKEN", "\"$mapToken\"")
+        val escapedMapToken = mapToken
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+        buildConfigField("String", "MAPKIT_JS_TOKEN", "\"$escapedMapToken\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

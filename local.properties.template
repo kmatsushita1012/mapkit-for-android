@@ -1,0 +1,9 @@
+## Copy this file to local.properties on your machine.
+## local.properties is gitignored and machine-specific.
+
+# Android SDK path (example)
+sdk.dir=/path/to/Android/sdk
+
+# MapKit JS token used by demo app buildConfigField.
+# You can also provide MAPKIT_JS_TOKEN as an OS environment variable.
+MAPKIT_JS_TOKEN=
