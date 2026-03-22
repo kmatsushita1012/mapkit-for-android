@@ -36,6 +36,7 @@
     overlayHashesById: {},
     longPressTimer: null,
     longPressStart: null,
+    lastMapTapAt: 0,
   };
 
   function emit(payload) {
@@ -358,6 +359,24 @@
       }
     });
 
+    const emitMapTapEvent = function (event) {
+      try {
+        if (!event) return;
+        if (event.annotation || event.overlay) return;
+        let c = event.coordinate;
+        if (!c && typeof event.pointOnPage !== "undefined" && event.pointOnPage) {
+          c = pointToCoordinate(event.pointOnPage.x, event.pointOnPage.y);
+        }
+        if (!c) return;
+        const now = Date.now();
+        if (now - state.lastMapTapAt < 180) return;
+        state.lastMapTapAt = now;
+        emit({ type: "mapTapped", lat: c.latitude, lng: c.longitude });
+      } catch (_) {}
+    };
+    state.map.addEventListener("single-tap", emitMapTapEvent);
+    state.map.addEventListener("click", emitMapTapEvent);
+
     setupLongPressDetection();
   }
 
@@ -368,17 +387,64 @@
     state.map.region = new window.mapkit.CoordinateRegion(center, span);
   }
 
+  function resolveImageSource(source) {
+    if (!source || !source.kind) return null;
+    if (source.kind === "url") return source.value || null;
+    if (source.kind === "base64Png") return "data:image/png;base64," + String(source.value || "");
+    if (source.kind === "resourceName") {
+      return "file:///android_res/drawable/" + source.value + ".png";
+    }
+    return null;
+  }
+
   function buildAnnotation(item) {
     const coord = new window.mapkit.Coordinate(item.lat, item.lng);
-    const marker = new window.mapkit.MarkerAnnotation(coord, {
-      title: item.title || item.id,
-      subtitle: item.subtitle || undefined,
-    });
-    marker.data = { id: item.id };
-    marker.addEventListener("select", function () {
+    const style = item.style || { kind: "defaultMarker" };
+    let annotation = null;
+    try {
+      if (style.kind === "defaultPin") {
+        annotation = new window.mapkit.Annotation(coord, {
+          title: item.title || item.id,
+          subtitle: item.subtitle || undefined,
+          color: style.tintHex || undefined,
+        });
+      } else if (style.kind === "image" && window.mapkit.Annotation) {
+        const imageUrl = resolveImageSource(style.source);
+        const img = document.createElement("img");
+        img.src = imageUrl || "";
+        img.alt = item.title || item.id;
+        img.style.width = String(style.widthDp || 36) + "px";
+        img.style.height = String(style.heightDp || 36) + "px";
+        img.style.objectFit = "contain";
+        img.style.pointerEvents = "none";
+        annotation = new window.mapkit.Annotation(coord, {
+          title: item.title || item.id,
+          subtitle: item.subtitle || undefined,
+          element: img,
+        });
+      } else {
+        annotation = new window.mapkit.MarkerAnnotation(coord, {
+          title: item.title || item.id,
+          subtitle: item.subtitle || undefined,
+          color: style.tintHex || undefined,
+          glyphText: style.glyphText || undefined,
+        });
+      }
+    } catch (_) {
+      annotation = new window.mapkit.MarkerAnnotation(coord, {
+        title: item.title || item.id,
+        subtitle: item.subtitle || undefined,
+      });
+    }
+    if (!annotation) return null;
+    annotation.data = { id: item.id };
+    if (item.isSelected && typeof annotation.selected !== "undefined") {
+      annotation.selected = true;
+    }
+    annotation.addEventListener("select", function () {
       emit({ type: "annotationTapped", id: item.id });
     });
-    return marker;
+    return annotation;
   }
 
   function reconcileAnnotations(nextItems) {
@@ -399,6 +465,7 @@
 
     Object.keys(nextMap).forEach((id) => {
       const item = nextMap[id];
+      if (item && item.isVisible === false) return;
       const nextHash = stableHash(item);
       const prevHash = state.annotationHashesById[id];
       if (prevHash === nextHash && state.annotationsById[id]) return;
@@ -409,6 +476,7 @@
         } catch (_) {}
       }
       const marker = buildAnnotation(item);
+      if (!marker) return;
       state.map.addAnnotation(marker);
       state.annotationsById[id] = marker;
       state.annotationHashesById[id] = nextHash;

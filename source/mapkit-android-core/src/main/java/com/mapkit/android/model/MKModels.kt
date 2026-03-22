@@ -212,6 +212,7 @@ sealed interface MKMapEvent {
     data object MapLoaded : MKMapEvent
     data class MapError(val cause: MKMapErrorCause) : MKMapEvent
     data class RegionDidChange(val region: MKCoordinateRegion, val settled: Boolean) : MKMapEvent
+    data class MapTapped(val coordinate: MKCoordinate) : MKMapEvent
     data class LongPress(val coordinate: MKCoordinate) : MKMapEvent
     data class AnnotationTapped(val id: String) : MKMapEvent
     data class OverlayTapped(val id: String) : MKMapEvent

@@ -40,10 +40,12 @@ import androidx.compose.ui.unit.dp
 import com.mapkit.android.api.MKMapKit
 import com.mapkit.android.api.MKMapView
 import com.mapkit.android.model.MKAnnotation
+import com.mapkit.android.model.MKAnnotationStyle
 import com.mapkit.android.model.MKAppearanceOption
 import com.mapkit.android.model.MKCameraZoomRange
 import com.mapkit.android.model.MKCoordinate
 import com.mapkit.android.model.MKCoordinateRegion
+import com.mapkit.android.model.MKImageSource
 import com.mapkit.android.model.MKMapEvent
 import com.mapkit.android.model.MKMapLanguage
 import com.mapkit.android.model.MKMapOptions
@@ -59,6 +61,8 @@ import java.util.UUID
 
 private enum class DemoTab { Map, Settings }
 private enum class DrawMode { Browse, Annotation, Polyline, Polygon }
+private enum class PlacementTrigger { Tap, LongPress }
+private enum class AnnotationVisualStyle { Default, CustomImage }
 private enum class ZoomRangePreset {
     none,
     city,
@@ -120,6 +124,12 @@ private fun DemoScreen() {
     var modeExpanded by remember { mutableStateOf(false) }
     var draftPoints by remember { mutableStateOf<List<MKCoordinate>>(emptyList()) }
     var lastEventText by remember { mutableStateOf("No events yet") }
+    var placementTrigger by remember { mutableStateOf(PlacementTrigger.LongPress) }
+    var annotationVisualStyle by remember { mutableStateOf(AnnotationVisualStyle.Default) }
+    var annotationTitle by remember { mutableStateOf("Pinned") }
+    var annotationSubtitle by remember { mutableStateOf("") }
+    var annotationTintHex by remember { mutableStateOf("#0ea5e9") }
+    var annotationGlyph by remember { mutableStateOf("A") }
 
     val selectedTab = if (selectedTabIndex == 0) DemoTab.Map else DemoTab.Settings
 
@@ -308,6 +318,39 @@ private fun DemoScreen() {
                         .weight(1f),
                     onEvent = { event ->
                         lastEventText = event.toDisplayText()
+
+                        fun addGeometryPoint(coordinate: MKCoordinate) {
+                            when (drawMode) {
+                                DrawMode.Browse -> Unit
+                                DrawMode.Annotation -> {
+                                    val annotationStyle = when (annotationVisualStyle) {
+                                        AnnotationVisualStyle.Default -> MKAnnotationStyle.DefaultMarker(
+                                            tintHex = annotationTintHex.ifBlank { null },
+                                            glyphText = annotationGlyph.ifBlank { null }
+                                        )
+
+                                        AnnotationVisualStyle.CustomImage -> MKAnnotationStyle.Image(
+                                            source = MKImageSource.Url("file:///android_asset/demo/custom-annotation.svg"),
+                                            widthDp = 40,
+                                            heightDp = 40
+                                        )
+                                    }
+                                    annotations = annotations + MKAnnotation(
+                                        id = UUID.randomUUID().toString(),
+                                        coordinate = coordinate,
+                                        title = annotationTitle.ifBlank { "Pinned" },
+                                        subtitle = annotationSubtitle.ifBlank { null },
+                                        style = annotationStyle
+                                    )
+                                }
+
+                                DrawMode.Polyline,
+                                DrawMode.Polygon -> {
+                                    draftPoints = draftPoints + coordinate
+                                }
+                            }
+                        }
+
                         when (event) {
                             is MKMapEvent.RegionDidChange -> {
                                 if (event.settled) {
@@ -316,20 +359,13 @@ private fun DemoScreen() {
                             }
 
                             is MKMapEvent.LongPress -> {
-                                when (drawMode) {
-                                    DrawMode.Browse -> Unit
-                                    DrawMode.Annotation -> {
-                                        annotations = annotations + MKAnnotation(
-                                            id = UUID.randomUUID().toString(),
-                                            coordinate = event.coordinate,
-                                            title = "Pinned"
-                                        )
-                                    }
-
-                                    DrawMode.Polyline,
-                                    DrawMode.Polygon -> {
-                                        draftPoints = draftPoints + event.coordinate
-                                    }
+                                if (placementTrigger == PlacementTrigger.LongPress) {
+                                    addGeometryPoint(event.coordinate)
+                                }
+                            }
+                            is MKMapEvent.MapTapped -> {
+                                if (placementTrigger == PlacementTrigger.Tap) {
+                                    addGeometryPoint(event.coordinate)
                                 }
                             }
 
@@ -367,6 +403,50 @@ private fun DemoScreen() {
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    EnumSelector(
+                        label = "Placement Trigger",
+                        value = placementTrigger,
+                        values = PlacementTrigger.entries,
+                        onSelected = { placementTrigger = it }
+                    )
+                    EnumSelector(
+                        label = "Annotation Style",
+                        value = annotationVisualStyle,
+                        values = AnnotationVisualStyle.entries,
+                        onSelected = { annotationVisualStyle = it }
+                    )
+                    OutlinedTextField(
+                        value = annotationTitle,
+                        onValueChange = { annotationTitle = it },
+                        label = { Text("Annotation Title") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = annotationSubtitle,
+                        onValueChange = { annotationSubtitle = it },
+                        label = { Text("Annotation Subtitle") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    if (annotationVisualStyle == AnnotationVisualStyle.Default) {
+                        OutlinedTextField(
+                            value = annotationTintHex,
+                            onValueChange = { annotationTintHex = it },
+                            label = { Text("Marker Tint (hex)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = annotationGlyph,
+                            onValueChange = { annotationGlyph = it.take(2) },
+                            label = { Text("Marker Glyph") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        Text(
+                            text = "Custom image: file:///android_asset/demo/custom-annotation.svg",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
                     EnumSelector(
                         label = "Map Style",
                         value = options.mapStyle,
@@ -530,6 +610,7 @@ private fun MKMapEvent.toDisplayText(): String {
     return when (this) {
         is MKMapEvent.MapLoaded -> "MapLoaded"
         is MKMapEvent.MapError -> "MapError: $cause"
+        is MKMapEvent.MapTapped -> "MapTapped(${coordinate.latitude.format6()},${coordinate.longitude.format6()})"
         is MKMapEvent.RegionDidChange -> {
             val center = region.center
             "RegionDidChange(settled=$settled, center=${center.latitude.format6()},${center.longitude.format6()})"

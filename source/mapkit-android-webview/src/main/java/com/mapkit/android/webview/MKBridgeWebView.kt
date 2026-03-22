@@ -15,6 +15,8 @@ import com.mapkit.android.model.MKCircleOverlay
 import com.mapkit.android.model.MKMapErrorCause
 import com.mapkit.android.model.MKMapEvent
 import com.mapkit.android.model.MKMapState
+import com.mapkit.android.model.MKAnnotationStyle
+import com.mapkit.android.model.MKImageSource
 import com.mapkit.android.model.MKPoiFilter
 import com.mapkit.android.model.MKPolygonOverlay
 import com.mapkit.android.model.MKPolylineOverlay
@@ -161,6 +163,9 @@ class MKBridgeWebView @JvmOverloads constructor(
                         .put("lng", annotation.coordinate.longitude)
                         .put("title", annotation.title)
                         .put("subtitle", annotation.subtitle)
+                        .put("isVisible", annotation.isVisible)
+                        .put("isSelected", annotation.isSelected)
+                        .put("style", serializeAnnotationStyle(annotation.style))
                 )
             }
         }
@@ -278,6 +283,12 @@ class MKBridgeWebView @JvmOverloads constructor(
                     longitude = json.getDouble("lng")
                 )
             )
+            "mapTapped" -> MKMapEvent.MapTapped(
+                coordinate = MKCoordinate(
+                    latitude = json.getDouble("lat"),
+                    longitude = json.getDouble("lng")
+                )
+            )
 
             "annotationTapped" -> MKMapEvent.AnnotationTapped(json.getString("id"))
             "overlayTapped" -> MKMapEvent.OverlayTapped(json.getString("id"))
@@ -297,6 +308,43 @@ class MKBridgeWebView @JvmOverloads constructor(
             else -> MKMapEvent.MapError(
                 MKMapErrorCause.BridgeFailure("Unknown event type: ${json.optString("type")}")
             )
+        }
+    }
+
+    private fun serializeAnnotationStyle(style: MKAnnotationStyle): JSONObject {
+        return when (style) {
+            is MKAnnotationStyle.DefaultPin -> JSONObject()
+                .put("kind", "defaultPin")
+                .put("tintHex", style.tintHex)
+
+            is MKAnnotationStyle.DefaultMarker -> JSONObject()
+                .put("kind", "defaultMarker")
+                .put("tintHex", style.tintHex)
+                .put("glyphText", style.glyphText)
+
+            is MKAnnotationStyle.Image -> JSONObject()
+                .put("kind", "image")
+                .put("source", serializeImageSource(style.source))
+                .put("widthDp", style.widthDp)
+                .put("heightDp", style.heightDp)
+                .put("anchorX", style.anchorX)
+                .put("anchorY", style.anchorY)
+        }
+    }
+
+    private fun serializeImageSource(source: MKImageSource): JSONObject {
+        return when (source) {
+            is MKImageSource.Url -> JSONObject()
+                .put("kind", "url")
+                .put("value", source.value)
+
+            is MKImageSource.Base64Png -> JSONObject()
+                .put("kind", "base64Png")
+                .put("value", source.value)
+
+            is MKImageSource.ResourceName -> JSONObject()
+                .put("kind", "resourceName")
+                .put("value", source.value)
         }
     }
 }
