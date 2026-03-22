@@ -127,6 +127,27 @@
     });
   }
 
+  function waitForCanvasSizeReady(canvasId, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const startedAt = Date.now();
+      const check = function () {
+        const el = document.getElementById(canvasId);
+        const width = el ? el.clientWidth : 0;
+        const height = el ? el.clientHeight : 0;
+        if (width > 0 && height > 0) {
+          resolve({ width: width, height: height });
+          return;
+        }
+        if (Date.now() - startedAt > timeoutMs) {
+          reject(new Error("mapCanvas size is not ready: " + width + "x" + height));
+          return;
+        }
+        requestAnimationFrame(check);
+      };
+      check();
+    });
+  }
+
   function pointToCoordinate(pageX, pageY) {
     if (!state.map || !window.mapkit) return null;
     try {
@@ -414,25 +435,24 @@
       window.mapkit.init(initOptions);
 
       const mapCanvasId = "mapCanvas";
-      const mapCanvas = document.getElementById(mapCanvasId);
-      if (mapCanvas) {
-        debugLog("mapCanvas size: " + mapCanvas.clientWidth + "x" + mapCanvas.clientHeight);
-      }
-      state.map = new window.mapkit.Map(mapCanvasId, {
-        isRotationEnabled: true,
-        isZoomEnabled: true,
-        isScrollEnabled: true,
-      });
+      return waitForCanvasSizeReady(mapCanvasId, 4000).then(function (size) {
+        debugLog("mapCanvas size: " + size.width + "x" + size.height);
+        state.map = new window.mapkit.Map(mapCanvasId, {
+          isRotationEnabled: true,
+          isZoomEnabled: true,
+          isScrollEnabled: true,
+        });
 
-      state.map.addEventListener("error", function (e) {
-        const msg = e && e.message ? e.message : "map error";
-        emitBridgeError("MapKit map error: " + msg);
-      });
+        state.map.addEventListener("error", function (e) {
+          const msg = e && e.message ? e.message : "map error";
+          emitBridgeError("MapKit map error: " + msg);
+        });
 
-      attachMapEvents();
-      state.mapReady = true;
-      applyMapOptions();
-      debugLog("map instance created");
+        attachMapEvents();
+        state.mapReady = true;
+        applyMapOptions();
+        debugLog("map instance created");
+      });
     });
   }
 
