@@ -373,9 +373,18 @@
     const emphasisPoi = emphasis === "walking" || emphasis === "transit";
     const effectiveTraffic = !!state.showsTraffic || emphasisTraffic;
     const effectivePoi = !!state.showsPointsOfInterest || emphasisPoi;
+    const requestedMapStyle = state.mapStyle;
 
     try {
-      const nextMapType = mapTypeFor(state.mapStyle);
+      let resolvedStyle = requestedMapStyle;
+      if (effectiveTraffic && requestedMapStyle === "mutedStandard") {
+        // Muted standard may not render traffic overlays; prefer standard when traffic is on.
+        resolvedStyle = "standard";
+      }
+      if (emphasis === "transit" && requestedMapStyle === "standard") {
+        resolvedStyle = "hybrid";
+      }
+      const nextMapType = mapTypeFor(resolvedStyle);
       if (nextMapType) {
         state.map.mapType = nextMapType;
       }
@@ -394,6 +403,16 @@
 
     try {
       state.map.showsPointsOfInterest = !!effectivePoi;
+    } catch (_) {}
+
+    try {
+      if (window.mapkit && window.mapkit.PointOfInterestFilter) {
+        if (effectivePoi) {
+          state.map.pointOfInterestFilter = null;
+        } else if (typeof window.mapkit.PointOfInterestFilter.excludingAll === "function") {
+          state.map.pointOfInterestFilter = window.mapkit.PointOfInterestFilter.excludingAll();
+        }
+      }
     } catch (_) {}
 
     try {
@@ -416,6 +435,14 @@
         state.map.showsMapTypeControl = false;
       }
     } catch (_) {}
+
+    debugLog(
+      "applyMapOptions style=" + state.mapStyle +
+      " emphasis=" + emphasis +
+      " traffic=" + effectiveTraffic +
+      " poi=" + effectivePoi +
+      " compass=" + state.showsCompass
+    );
   }
 
   function initializeMapKit() {
