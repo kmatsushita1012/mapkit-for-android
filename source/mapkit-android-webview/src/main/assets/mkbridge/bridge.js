@@ -271,6 +271,14 @@
     return null;
   }
 
+  function fallbackCoordinate() {
+    try {
+      if (!state.map || !state.map.region || !state.map.region.center) return null;
+      return state.map.region.center;
+    } catch (_) {}
+    return null;
+  }
+
   function setupLongPressDetection() {
     const target = document.getElementById("mapCanvas");
     if (!target) return;
@@ -862,8 +870,11 @@
 
     emitGestureAt: function (pageX, pageY, type) {
       if (!state.mapReady) return;
-      const c = pointToCoordinate(Number(pageX), Number(pageY));
-      if (!c) return;
+      const c = pointToCoordinate(Number(pageX), Number(pageY)) || fallbackCoordinate();
+      if (!c) {
+        debugLog("emitGestureAt skipped: no coordinate for type=" + String(type));
+        return;
+      }
       if (type === "longPress") {
         debugLog("emit longPress lat=" + c.latitude + " lng=" + c.longitude);
         emit({ type: "longPress", lat: c.latitude, lng: c.longitude });
