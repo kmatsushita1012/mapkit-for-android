@@ -2,6 +2,7 @@ package com.mapkit.android.demo
 
 import android.Manifest
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -118,7 +119,7 @@ private fun DemoScreen() {
         mutableStateOf<List<MKOverlay>>(emptyList())
     }
     var options by remember {
-        mutableStateOf(MKMapOptions(userLocation = MKUserLocationOptions(isEnabled = true)))
+        mutableStateOf(MKMapOptions(userLocation = MKUserLocationOptions(isEnabled = false)))
     }
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -183,15 +184,6 @@ private fun DemoScreen() {
             granted[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         options = options.copy(
             userLocation = options.userLocation.copy(isEnabled = enabled)
-        )
-    }
-
-    LaunchedEffect(Unit) {
-        permissionLauncher.launch(
-            arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
         )
     }
 
@@ -354,7 +346,7 @@ private fun DemoScreen() {
                                 }
                             }
                         }
-
+                        Log.d("MainActivity", "$event")
                         when (event) {
                             is MKMapEvent.RegionDidChange -> {
                                 if (event.settled) {
@@ -522,6 +514,24 @@ private fun DemoScreen() {
                             }
                         )
 
+                        ToggleRow(
+                            label = "User Location",
+                            checked = options.userLocation.isEnabled,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    permissionLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                        )
+                                    )
+                                } else {
+                                    options = options.copy(
+                                        userLocation = options.userLocation.copy(isEnabled = false)
+                                    )
+                                }
+                            }
+                        )
                         ToggleRow(
                             label = "Compass",
                             checked = options.showsCompass,
