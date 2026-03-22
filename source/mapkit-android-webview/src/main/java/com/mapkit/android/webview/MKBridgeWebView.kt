@@ -59,7 +59,7 @@ class MKBridgeWebView @JvmOverloads constructor(
         settings.domStorageEnabled = true
         settings.allowFileAccess = true
         settings.allowContentAccess = false
-        settings.setSupportZoom(true)
+        settings.setSupportZoom(false)
         settings.builtInZoomControls = false
         settings.displayZoomControls = false
         settings.useWideViewPort = true
