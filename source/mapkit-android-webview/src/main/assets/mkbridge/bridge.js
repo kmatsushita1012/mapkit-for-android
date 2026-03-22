@@ -105,6 +105,17 @@
       : (window.mapkit.FeatureVisibility.Hidden || window.mapkit.FeatureVisibility.Adaptive);
   }
 
+  function setFeatureVisibility(target, key, enabled) {
+    if (!target || typeof target[key] === "undefined") return;
+    try {
+      target[key] = featureVisibilityFor(!!enabled);
+      return;
+    } catch (_) {}
+    try {
+      target[key] = !!enabled;
+    } catch (_) {}
+  }
+
   function loadMapKitScriptIfNeeded() {
     return new Promise((resolve, reject) => {
       if (window.mapkit) {
@@ -368,6 +379,11 @@
 
   function applyMapOptions() {
     if (!state.mapReady || !state.map) return;
+    const emphasis = state.navigationEmphasis || "none";
+    const emphasisTraffic = emphasis === "driving" || emphasis === "transit";
+    const emphasisPoi = emphasis === "walking" || emphasis === "transit";
+    const effectiveTraffic = !!state.showsTraffic || emphasisTraffic;
+    const effectivePoi = !!state.showsPointsOfInterest || emphasisPoi;
 
     try {
       const nextMapType = mapTypeFor(state.mapStyle);
@@ -383,23 +399,10 @@
       }
     } catch (_) {}
 
-    try {
-      state.map.showsTraffic = !!state.showsTraffic;
-    } catch (_) {}
-
-    try {
-      state.map.showsCompass = featureVisibilityFor(!!state.showsCompass);
-    } catch (_) {}
-
-    try {
-      state.map.showsScale = featureVisibilityFor(!!state.showsScale);
-    } catch (_) {}
-
-    try {
-      if (typeof state.map.showsPointsOfInterest !== "undefined") {
-        state.map.showsPointsOfInterest = featureVisibilityFor(!!state.showsPointsOfInterest);
-      }
-    } catch (_) {}
+    setFeatureVisibility(state.map, "showsTraffic", effectiveTraffic);
+    setFeatureVisibility(state.map, "showsCompass", !!state.showsCompass);
+    setFeatureVisibility(state.map, "showsScale", !!state.showsScale);
+    setFeatureVisibility(state.map, "showsPointsOfInterest", effectivePoi);
 
     try {
       state.map.isRotationEnabled = !!state.isRotateEnabled;

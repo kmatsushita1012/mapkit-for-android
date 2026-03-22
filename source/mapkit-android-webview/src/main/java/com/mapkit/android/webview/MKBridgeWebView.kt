@@ -19,7 +19,6 @@ import com.mapkit.android.model.MKPolygonOverlay
 import com.mapkit.android.model.MKPolylineOverlay
 import com.mapkit.android.webview.internal.InternalMapState
 import com.mapkit.android.webview.internal.MKBridgeMapper
-import com.mapkit.android.webview.internal.approximatelyEquals
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -33,7 +32,7 @@ class MKBridgeWebView @JvmOverloads constructor(
     private var isPageReady = false
     private var isJsInitSent = false
     private var pendingToken: String? = null
-    private var lastAppliedState: InternalMapState? = null
+    private var lastAppliedPayload: String? = null
     private var pendingState: MKMapState? = null
 
     private val androidBridge = object {
@@ -106,12 +105,11 @@ class MKBridgeWebView @JvmOverloads constructor(
     private fun flushPendingState() {
         val latest = pendingState ?: return
         if (!isPageReady || !isJsInitSent) return
-        val latestInternal = MKBridgeMapper.toInternal(latest)
-        if (lastAppliedState?.approximatelyEquals(latestInternal) == true) return
 
         val payload = serializeState(latest)
+        if (lastAppliedPayload == payload) return
         evaluateJavascriptSafe("window.MKBridge && window.MKBridge.applyState($payload);")
-        lastAppliedState = latestInternal
+        lastAppliedPayload = payload
     }
 
     private fun sendInitIfPossible() {
