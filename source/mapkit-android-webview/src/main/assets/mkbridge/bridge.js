@@ -423,6 +423,27 @@
       } catch (_) {}
     });
 
+    const mapTapLikeEvents = ["single-tap", "long-press", "double-tap", "click"];
+    mapTapLikeEvents.forEach(function (name) {
+      state.map.addEventListener(name, function (event) {
+        try {
+          debugLog("map event fired: " + name);
+          if (event && event.annotation) return;
+          if (event && event.overlay) return;
+          let c = event && event.coordinate ? event.coordinate : null;
+          if (!c && event && event.pointOnPage) {
+            c = pointToCoordinate(event.pointOnPage.x, event.pointOnPage.y);
+          }
+          if (!c) return;
+          if (name === "long-press") {
+            emit({ type: "longPress", lat: c.latitude, lng: c.longitude });
+          } else if (name === "single-tap" || name === "click") {
+            emit({ type: "mapTapped", lat: c.latitude, lng: c.longitude });
+          }
+        } catch (_) {}
+      });
+    });
+
     // Gesture input is emitted from Android WebView touch detector via emitGestureAt().
   }
 
