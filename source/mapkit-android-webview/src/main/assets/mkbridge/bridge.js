@@ -21,6 +21,7 @@
     annotationHashesById: {},
     overlayHashesById: {},
   };
+  const DEBUG_EMIT_TO_ANDROID = false;
 
   function emit(payload) {
     if (window.AndroidMKBridge && window.AndroidMKBridge.emitEvent) {
@@ -32,7 +33,9 @@
     const text = "[MKBridgeJS] " + message;
     try {
       console.log(text);
-      emit({ type: "debug", message: text });
+      if (DEBUG_EMIT_TO_ANDROID) {
+        emit({ type: "debug", message: text });
+      }
     } catch (_) {}
   }
 
@@ -220,6 +223,9 @@
     debugLog("initializeMapKit called");
     return loadMapKitScriptIfNeeded().then(() => {
       if (!window.mapkit) throw new Error("mapkit is unavailable");
+      if (!state.token || !String(state.token).startsWith("eyJ")) {
+        emitBridgeError("MAPKIT_JS_TOKEN does not look like Apple JWT token (expected prefix: eyJ...)");
+      }
       debugLog("mapkit script loaded");
       window.mapkit.init({
         authorizationCallback: function (done) {
@@ -233,6 +239,10 @@
         isZoomEnabled: true,
         isScrollEnabled: true,
         showsCompass: window.mapkit.FeatureVisibility && window.mapkit.FeatureVisibility.Adaptive,
+      });
+      state.map.addEventListener("error", function (e) {
+        const msg = (e && e.message) ? e.message : "map error";
+        emitBridgeError("MapKit map error: " + msg);
       });
       attachMapEvents();
       state.mapReady = true;
