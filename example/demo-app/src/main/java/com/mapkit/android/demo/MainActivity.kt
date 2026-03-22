@@ -41,6 +41,7 @@ import com.mapkit.android.api.MKMapKit
 import com.mapkit.android.api.MKMapView
 import com.mapkit.android.model.MKAnnotation
 import com.mapkit.android.model.MKAppearanceOption
+import com.mapkit.android.model.MKCameraZoomRange
 import com.mapkit.android.model.MKCoordinate
 import com.mapkit.android.model.MKCoordinateRegion
 import com.mapkit.android.model.MKMapEvent
@@ -50,6 +51,7 @@ import com.mapkit.android.model.MKMapState
 import com.mapkit.android.model.MKMapStyle
 import com.mapkit.android.model.MKOverlay
 import com.mapkit.android.model.MKOverlayStyle
+import com.mapkit.android.model.MKPoiFilter
 import com.mapkit.android.model.MKPolygonOverlay
 import com.mapkit.android.model.MKPolylineOverlay
 import com.mapkit.android.model.MKUserLocationOptions
@@ -57,6 +59,17 @@ import java.util.UUID
 
 private enum class DemoTab { Map, Settings }
 private enum class DrawMode { Browse, Annotation, Polyline, Polygon }
+private enum class ZoomRangePreset {
+    none,
+    city,
+    district
+}
+private enum class PoiFilterPreset {
+    all,
+    none,
+    includeCafePark,
+    excludeCafePark
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -327,6 +340,27 @@ private fun DemoScreen() {
             }
 
             DemoTab.Settings -> {
+                val poiFilterPreset = when (val f = options.poiFilter) {
+                    MKPoiFilter.All -> PoiFilterPreset.all
+                    MKPoiFilter.None -> PoiFilterPreset.none
+                    is MKPoiFilter.Include -> {
+                        val s = f.categories.map { it.lowercase() }.toSet()
+                        if (s == setOf("cafe", "park")) PoiFilterPreset.includeCafePark else PoiFilterPreset.all
+                    }
+                    is MKPoiFilter.Exclude -> {
+                        val s = f.categories.map { it.lowercase() }.toSet()
+                        if (s == setOf("cafe", "park")) PoiFilterPreset.excludeCafePark else PoiFilterPreset.all
+                    }
+                }
+                val zoomRangePreset = when (val z = options.cameraZoomRange) {
+                    null -> ZoomRangePreset.none
+                    MKCameraZoomRange(minDistanceMeter = 150.0, maxDistanceMeter = 20_000.0) ->
+                        ZoomRangePreset.city
+                    MKCameraZoomRange(minDistanceMeter = 50.0, maxDistanceMeter = 3_000.0) ->
+                        ZoomRangePreset.district
+                    else -> ZoomRangePreset.none
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -351,6 +385,44 @@ private fun DemoScreen() {
                         values = MKAppearanceOption.entries,
                         onSelected = { options = options.copy(appearance = it) }
                     )
+                    EnumSelector(
+                        label = "POI Filter",
+                        value = poiFilterPreset,
+                        values = PoiFilterPreset.entries,
+                        onSelected = { preset ->
+                            val filter = when (preset) {
+                                PoiFilterPreset.all -> MKPoiFilter.All
+                                PoiFilterPreset.none -> MKPoiFilter.None
+                                PoiFilterPreset.includeCafePark -> {
+                                    MKPoiFilter.Include(listOf("cafe", "park"))
+                                }
+                                PoiFilterPreset.excludeCafePark -> {
+                                    MKPoiFilter.Exclude(listOf("cafe", "park"))
+                                }
+                            }
+                            options = options.copy(poiFilter = filter)
+                        }
+                    )
+                    EnumSelector(
+                        label = "Zoom Range",
+                        value = zoomRangePreset,
+                        values = ZoomRangePreset.entries,
+                        onSelected = { preset ->
+                            options = options.copy(
+                                cameraZoomRange = when (preset) {
+                                    ZoomRangePreset.none -> null
+                                    ZoomRangePreset.city -> MKCameraZoomRange(
+                                        minDistanceMeter = 150.0,
+                                        maxDistanceMeter = 20_000.0
+                                    )
+                                    ZoomRangePreset.district -> MKCameraZoomRange(
+                                        minDistanceMeter = 50.0,
+                                        maxDistanceMeter = 3_000.0
+                                    )
+                                }
+                            )
+                        }
+                    )
 
                     ToggleRow(
                         label = "Compass",
@@ -361,6 +433,36 @@ private fun DemoScreen() {
                         label = "Points Of Interest",
                         checked = options.showsPointsOfInterest,
                         onCheckedChange = { options = options.copy(showsPointsOfInterest = it) }
+                    )
+                    ToggleRow(
+                        label = "Zoom Control",
+                        checked = options.showsZoomControl,
+                        onCheckedChange = { options = options.copy(showsZoomControl = it) }
+                    )
+                    ToggleRow(
+                        label = "Map Type Control",
+                        checked = options.showsMapTypeControl,
+                        onCheckedChange = { options = options.copy(showsMapTypeControl = it) }
+                    )
+                    ToggleRow(
+                        label = "Rotate Enabled",
+                        checked = options.isRotateEnabled,
+                        onCheckedChange = { options = options.copy(isRotateEnabled = it) }
+                    )
+                    ToggleRow(
+                        label = "Scroll Enabled",
+                        checked = options.isScrollEnabled,
+                        onCheckedChange = { options = options.copy(isScrollEnabled = it) }
+                    )
+                    ToggleRow(
+                        label = "Zoom Enabled",
+                        checked = options.isZoomEnabled,
+                        onCheckedChange = { options = options.copy(isZoomEnabled = it) }
+                    )
+                    ToggleRow(
+                        label = "Pitch Enabled",
+                        checked = options.isPitchEnabled,
+                        onCheckedChange = { options = options.copy(isPitchEnabled = it) }
                     )
                 }
             }

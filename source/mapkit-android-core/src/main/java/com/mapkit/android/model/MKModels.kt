@@ -145,6 +145,32 @@ enum class MKMapLanguage {
     en
 }
 
+data class MKCameraZoomRange(
+    val minDistanceMeter: Double? = null,
+    val maxDistanceMeter: Double? = null
+) {
+    init {
+        require(minDistanceMeter == null || minDistanceMeter >= 0.0) {
+            "minDistanceMeter must be >= 0"
+        }
+        require(maxDistanceMeter == null || maxDistanceMeter >= 0.0) {
+            "maxDistanceMeter must be >= 0"
+        }
+        if (minDistanceMeter != null && maxDistanceMeter != null) {
+            require(minDistanceMeter <= maxDistanceMeter) {
+                "minDistanceMeter must be <= maxDistanceMeter"
+            }
+        }
+    }
+}
+
+sealed interface MKPoiFilter {
+    data object All : MKPoiFilter
+    data object None : MKPoiFilter
+    data class Include(val categories: List<String>) : MKPoiFilter
+    data class Exclude(val categories: List<String>) : MKPoiFilter
+}
+
 data class MKUserLocationOptions(
     val isEnabled: Boolean = false,
     val followsHeading: Boolean = false,
@@ -155,7 +181,11 @@ data class MKMapOptions(
     val mapStyle: MKMapStyle = MKMapStyle.standard,
     val showsCompass: Boolean = true,
     val showsScale: Boolean = false,
+    val showsZoomControl: Boolean = false,
+    val showsMapTypeControl: Boolean = false,
     val showsPointsOfInterest: Boolean = true,
+    val poiFilter: MKPoiFilter = MKPoiFilter.All,
+    val cameraZoomRange: MKCameraZoomRange? = null,
     val isRotateEnabled: Boolean = true,
     val isScrollEnabled: Boolean = true,
     val isZoomEnabled: Boolean = true,

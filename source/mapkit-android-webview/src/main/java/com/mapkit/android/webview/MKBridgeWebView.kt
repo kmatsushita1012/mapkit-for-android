@@ -15,6 +15,7 @@ import com.mapkit.android.model.MKCircleOverlay
 import com.mapkit.android.model.MKMapErrorCause
 import com.mapkit.android.model.MKMapEvent
 import com.mapkit.android.model.MKMapState
+import com.mapkit.android.model.MKPoiFilter
 import com.mapkit.android.model.MKPolygonOverlay
 import com.mapkit.android.model.MKPolylineOverlay
 import com.mapkit.android.webview.internal.InternalMapState
@@ -213,7 +214,30 @@ class MKBridgeWebView @JvmOverloads constructor(
             .put("mapStyle", state.options.mapStyle.name)
             .put("showsCompass", state.options.showsCompass)
             .put("showsScale", state.options.showsScale)
+            .put("showsZoomControl", state.options.showsZoomControl)
+            .put("showsMapTypeControl", state.options.showsMapTypeControl)
             .put("showsPointsOfInterest", state.options.showsPointsOfInterest)
+            .put(
+                "poiFilter",
+                when (val filter = state.options.poiFilter) {
+                    MKPoiFilter.All -> JSONObject().put("type", "all")
+                    MKPoiFilter.None -> JSONObject().put("type", "none")
+                    is MKPoiFilter.Include -> JSONObject()
+                        .put("type", "include")
+                        .put("categories", JSONArray(filter.categories))
+                    is MKPoiFilter.Exclude -> JSONObject()
+                        .put("type", "exclude")
+                        .put("categories", JSONArray(filter.categories))
+                }
+            )
+            .put(
+                "cameraZoomRange",
+                state.options.cameraZoomRange?.let { zoomRange ->
+                    JSONObject()
+                        .put("minDistanceMeter", zoomRange.minDistanceMeter)
+                        .put("maxDistanceMeter", zoomRange.maxDistanceMeter)
+                }
+            )
             .put("isRotateEnabled", state.options.isRotateEnabled)
             .put("isScrollEnabled", state.options.isScrollEnabled)
             .put("isZoomEnabled", state.options.isZoomEnabled)

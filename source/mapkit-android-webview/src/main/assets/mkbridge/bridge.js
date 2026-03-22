@@ -14,7 +14,11 @@
     language: "auto",
     showsCompass: true,
     showsScale: false,
+    showsZoomControl: false,
+    showsMapTypeControl: false,
     showsPointsOfInterest: true,
+    poiFilter: { type: "all", categories: [] },
+    cameraZoomRange: null,
     isRotateEnabled: true,
     isScrollEnabled: true,
     isZoomEnabled: true,
@@ -101,6 +105,112 @@
     return enabled
       ? (window.mapkit.FeatureVisibility.Visible || window.mapkit.FeatureVisibility.Adaptive)
       : (window.mapkit.FeatureVisibility.Hidden || window.mapkit.FeatureVisibility.Adaptive);
+  }
+
+  function toPoiCategory(category) {
+    if (!window.mapkit || !window.mapkit.PointOfInterestCategory) return null;
+    const c = window.mapkit.PointOfInterestCategory;
+    if (typeof category !== "string") return null;
+    if (c[category]) return c[category];
+    const key = category.replace(/[-_ ]/g, "").toLowerCase();
+    const map = {
+      airport: c.Airport,
+      amusementpark: c.AmusementPark,
+      aquarium: c.Aquarium,
+      atm: c.ATM,
+      bakery: c.Bakery,
+      bank: c.Bank,
+      beach: c.Beach,
+      brewery: c.Brewery,
+      cafe: c.Cafe,
+      campground: c.Campground,
+      carrental: c.CarRental,
+      evcharger: c.EVCharger,
+      firestation: c.FireStation,
+      fitnesscenter: c.FitnessCenter,
+      foodmarket: c.FoodMarket,
+      gasstation: c.GasStation,
+      hospital: c.Hospital,
+      hotel: c.Hotel,
+      laundry: c.Laundry,
+      library: c.Library,
+      marina: c.Marina,
+      movieheater: c.MovieTheater,
+      museum: c.Museum,
+      nationalpark: c.NationalPark,
+      nightlife: c.Nightlife,
+      park: c.Park,
+      parking: c.Parking,
+      pharmacy: c.Pharmacy,
+      policestation: c.Police,
+      postoffice: c.PostOffice,
+      publictransport: c.PublicTransport,
+      restaurant: c.Restaurant,
+      restroom: c.Restroom,
+      school: c.School,
+      stadium: c.Stadium,
+      store: c.Store,
+      theater: c.Theater,
+      university: c.University,
+      winery: c.Winery,
+      zoo: c.Zoo,
+    };
+    return map[key] || null;
+  }
+
+  function categoriesFromFilter(filter) {
+    const src = (filter && filter.categories) ? filter.categories : [];
+    return src
+      .map((v) => toPoiCategory(v))
+      .filter((v) => !!v);
+  }
+
+  function applyPoiFilter(filter, defaultPoiVisible) {
+    if (!state.mapReady || !state.map) return;
+    const effectiveFilter = filter || { type: "all", categories: [] };
+    const type = (effectiveFilter.type || "all").toLowerCase();
+    const categories = categoriesFromFilter(effectiveFilter);
+
+    try {
+      if (window.mapkit && window.mapkit.PointOfInterestFilter) {
+        if (type === "none" || (!defaultPoiVisible && type === "all")) {
+          if (typeof window.mapkit.PointOfInterestFilter.excludingAll === "function") {
+            state.map.pointOfInterestFilter = window.mapkit.PointOfInterestFilter.excludingAll();
+            return;
+          }
+        }
+
+        if (type === "include" && categories.length > 0) {
+          if (typeof window.mapkit.PointOfInterestFilter.including === "function") {
+            state.map.pointOfInterestFilter = window.mapkit.PointOfInterestFilter.including(categories);
+            return;
+          }
+        }
+
+        if (type === "exclude" && categories.length > 0) {
+          if (typeof window.mapkit.PointOfInterestFilter.excluding === "function") {
+            state.map.pointOfInterestFilter = window.mapkit.PointOfInterestFilter.excluding(categories);
+            return;
+          }
+        }
+
+        state.map.pointOfInterestFilter = null;
+      }
+    } catch (_) {}
+  }
+
+  function applyCameraZoomRange(range) {
+    if (!state.mapReady || !state.map) return;
+    try {
+      if (!window.mapkit || typeof window.mapkit.CameraZoomRange === "undefined") return;
+      if (!range || (range.minDistanceMeter == null && range.maxDistanceMeter == null)) {
+        state.map.cameraZoomRange = null;
+        return;
+      }
+      const minD = (range.minDistanceMeter == null) ? undefined : range.minDistanceMeter;
+      const maxD = (range.maxDistanceMeter == null) ? undefined : range.maxDistanceMeter;
+      state.map.cameraZoomRange = new window.mapkit.CameraZoomRange(minD, maxD);
+    } catch (_) {}
   }
 
   function loadMapKitScriptIfNeeded() {
@@ -385,16 +495,8 @@
     try {
       state.map.showsPointsOfInterest = !!effectivePoi;
     } catch (_) {}
-
-    try {
-      if (window.mapkit && window.mapkit.PointOfInterestFilter) {
-        if (effectivePoi) {
-          state.map.pointOfInterestFilter = null;
-        } else if (typeof window.mapkit.PointOfInterestFilter.excludingAll === "function") {
-          state.map.pointOfInterestFilter = window.mapkit.PointOfInterestFilter.excludingAll();
-        }
-      }
-    } catch (_) {}
+    applyPoiFilter(state.poiFilter, effectivePoi);
+    applyCameraZoomRange(state.cameraZoomRange);
 
     try {
       state.map.showsCompass = featureVisibilityFor(!!state.showsCompass);
@@ -413,7 +515,12 @@
 
     try {
       if (typeof state.map.showsMapTypeControl !== "undefined") {
-        state.map.showsMapTypeControl = false;
+        state.map.showsMapTypeControl = !!state.showsMapTypeControl;
+      }
+    } catch (_) {}
+    try {
+      if (typeof state.map.showsZoomControl !== "undefined") {
+        state.map.showsZoomControl = !!state.showsZoomControl;
       }
     } catch (_) {}
 
@@ -421,6 +528,7 @@
       "applyMapOptions style=" + state.mapStyle +
       " poi=" + effectivePoi +
       " compass=" + state.showsCompass +
+      " zoomControl=" + state.showsZoomControl +
       " mapType=" + String(state.map.mapType)
     );
   }
@@ -536,8 +644,20 @@
       if (payload && payload.language) state.language = payload.language;
       if (payload && typeof payload.showsCompass !== "undefined") state.showsCompass = !!payload.showsCompass;
       if (payload && typeof payload.showsScale !== "undefined") state.showsScale = !!payload.showsScale;
+      if (payload && typeof payload.showsZoomControl !== "undefined") {
+        state.showsZoomControl = !!payload.showsZoomControl;
+      }
+      if (payload && typeof payload.showsMapTypeControl !== "undefined") {
+        state.showsMapTypeControl = !!payload.showsMapTypeControl;
+      }
       if (payload && typeof payload.showsPointsOfInterest !== "undefined") {
         state.showsPointsOfInterest = !!payload.showsPointsOfInterest;
+      }
+      if (payload && payload.poiFilter) {
+        state.poiFilter = payload.poiFilter;
+      }
+      if (payload && typeof payload.cameraZoomRange !== "undefined") {
+        state.cameraZoomRange = payload.cameraZoomRange;
       }
       if (payload && typeof payload.isRotateEnabled !== "undefined") state.isRotateEnabled = !!payload.isRotateEnabled;
       if (payload && typeof payload.isScrollEnabled !== "undefined") state.isScrollEnabled = !!payload.isScrollEnabled;
