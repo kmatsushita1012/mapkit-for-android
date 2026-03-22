@@ -297,7 +297,12 @@
       longPressFired = false;
     };
 
-    target.addEventListener("pointerdown", function (event) {
+    const isInsideMapCanvas = function (event) {
+      return !!(event && event.target && target.contains(event.target));
+    };
+
+    const onPointerDown = function (event) {
+      if (!isInsideMapCanvas(event)) return;
       activePointers.add(event.pointerId);
       if (activePointers.size > 1 || !event.isPrimary) {
         resetGestureState();
@@ -312,11 +317,13 @@
         const c = pointToCoordinate(state.longPressStart.x, state.longPressStart.y);
         if (!c) return;
         longPressFired = true;
+        debugLog("emit longPress");
         emit({ type: "longPress", lat: c.latitude, lng: c.longitude });
       }, 550);
-    });
+    };
 
-    target.addEventListener("pointermove", function (event) {
+    const onPointerMove = function (event) {
+      if (primaryPointerId == null) return;
       if (activePointers.size > 1 || !event.isPrimary || event.pointerId !== primaryPointerId) {
         resetGestureState();
         return;
@@ -329,9 +336,13 @@
         moved = true;
         clearTimer();
       }
-    });
+    };
 
     const onPointerEnd = function (event) {
+      if (primaryPointerId == null) {
+        activePointers.delete(event.pointerId);
+        return;
+      }
       activePointers.delete(event.pointerId);
       if (event.pointerId === primaryPointerId && state.longPressStart) {
         const duration = Date.now() - pointerDownAt;
@@ -341,15 +352,30 @@
           const now = Date.now();
           if (now - state.lastMapTapAt >= 180) {
             state.lastMapTapAt = now;
+            debugLog("emit mapTapped");
             emit({ type: "mapTapped", lat: c.latitude, lng: c.longitude });
           }
         }
       }
       resetGestureState();
     };
-    target.addEventListener("pointerup", onPointerEnd);
-    target.addEventListener("pointercancel", onPointerEnd);
-    target.addEventListener("pointerleave", onPointerEnd);
+    const onClick = function (event) {
+      if (!isInsideMapCanvas(event)) return;
+      if (primaryPointerId != null) return;
+      const c = pointToCoordinate(event.pageX, event.pageY);
+      if (!c) return;
+      const now = Date.now();
+      if (now - state.lastMapTapAt < 180) return;
+      state.lastMapTapAt = now;
+      debugLog("emit mapTapped(click)");
+      emit({ type: "mapTapped", lat: c.latitude, lng: c.longitude });
+    };
+
+    document.addEventListener("pointerdown", onPointerDown, true);
+    document.addEventListener("pointermove", onPointerMove, true);
+    document.addEventListener("pointerup", onPointerEnd, true);
+    document.addEventListener("pointercancel", onPointerEnd, true);
+    document.addEventListener("click", onClick, true);
   }
 
   function attachMapEvents() {
