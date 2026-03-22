@@ -98,6 +98,13 @@
     }
   }
 
+  function featureVisibilityFor(enabled) {
+    if (!window.mapkit || !window.mapkit.FeatureVisibility) return enabled;
+    return enabled
+      ? (window.mapkit.FeatureVisibility.Adaptive || window.mapkit.FeatureVisibility.Visible)
+      : (window.mapkit.FeatureVisibility.Hidden || window.mapkit.FeatureVisibility.Adaptive);
+  }
+
   function loadMapKitScriptIfNeeded() {
     return new Promise((resolve, reject) => {
       if (window.mapkit) {
@@ -360,16 +367,16 @@
     } catch (_) {}
 
     try {
-      state.map.showsCompass = !!state.showsCompass;
+      state.map.showsCompass = featureVisibilityFor(!!state.showsCompass);
     } catch (_) {}
 
     try {
-      state.map.showsScale = !!state.showsScale;
+      state.map.showsScale = featureVisibilityFor(!!state.showsScale);
     } catch (_) {}
 
     try {
       if (typeof state.map.showsPointsOfInterest !== "undefined") {
-        state.map.showsPointsOfInterest = !!state.showsPointsOfInterest;
+        state.map.showsPointsOfInterest = featureVisibilityFor(!!state.showsPointsOfInterest);
       }
     } catch (_) {}
 
@@ -407,6 +414,10 @@
       window.mapkit.init(initOptions);
 
       const mapCanvasId = "mapCanvas";
+      const mapCanvas = document.getElementById(mapCanvasId);
+      if (mapCanvas) {
+        debugLog("mapCanvas size: " + mapCanvas.clientWidth + "x" + mapCanvas.clientHeight);
+      }
       state.map = new window.mapkit.Map(mapCanvasId, {
         isRotationEnabled: true,
         isZoomEnabled: true,
