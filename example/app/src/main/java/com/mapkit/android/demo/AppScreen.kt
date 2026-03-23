@@ -42,6 +42,7 @@ import com.studiomk.mapkit.model.MKMapLanguage
 import com.studiomk.mapkit.model.MKMapOptions
 import com.studiomk.mapkit.model.MKMapState
 import com.studiomk.mapkit.model.MKMapStyle
+import com.studiomk.mapkit.model.MKMarkerAnnotation
 import com.studiomk.mapkit.model.MKOverlay
 import com.studiomk.mapkit.model.MKPoiFilter
 import com.studiomk.mapkit.model.MKPolygonOverlay
@@ -62,9 +63,9 @@ internal fun AppScreen() {
         )
     }
     var annotations by remember {
-        mutableStateOf(
+        mutableStateOf<List<MKAnnotation>>(
             listOf(
-                MKAnnotation(
+                MKMarkerAnnotation(
                     id = "tokyo-station",
                     coordinate = MKCoordinate(35.681236, 139.767125),
                     title = "Tokyo Station"
@@ -89,7 +90,7 @@ internal fun AppScreen() {
     var lastEventText by remember { mutableStateOf("No events yet") }
 
     var placementTrigger by remember { mutableStateOf(PlacementTrigger.LongPress) }
-    var annotationVisualStyle by remember { mutableStateOf(AnnotationVisualStyle.Default) }
+    var annotationVisualStyle by remember { mutableStateOf(AnnotationVisualStyle.Marker) }
     var annotationTitle by remember { mutableStateOf("Pinned") }
     var annotationSubtitle by remember { mutableStateOf("") }
     var annotationTintHex by remember { mutableStateOf("#0ea5e9") }
@@ -318,9 +319,14 @@ internal fun AppScreen() {
                             when (drawMode) {
                                 DrawMode.Browse -> Unit
                                 DrawMode.Annotation -> {
-                                    val annotationStyle = when (annotationVisualStyle) {
-                                        AnnotationVisualStyle.Default -> MKAnnotationStyle.Default(
-                                            tintHex = annotationTintHex.ifBlank { null },
+                                    val normalizedTitle = annotationTitle.ifBlank { "Pinned" }
+                                    annotations = when (annotationVisualStyle) {
+                                        AnnotationVisualStyle.Marker -> annotations + MKMarkerAnnotation(
+                                            id = UUID.randomUUID().toString(),
+                                            coordinate = coordinate,
+                                            title = normalizedTitle,
+                                            subtitle = annotationSubtitle.ifBlank { null },
+                                            tintHex = annotationTintHex.ifBlank { "#FF3B30" },
                                             glyphText = if (markerGlyphMode == MarkerGlyphMode.GlyphText) {
                                                 annotationGlyph.ifBlank { null }
                                             } else {
@@ -333,24 +339,23 @@ internal fun AppScreen() {
                                             }
                                         )
 
-                                        AnnotationVisualStyle.CustomImage -> MKAnnotationStyle.CustomImage(
-                                            source = MKImageSource.Base64Png(
-                                                renderFilledCircleBase64Png(
+                                        AnnotationVisualStyle.Custom -> {
+                                            val payload = Point(
+                                                title = normalizedTitle,
+                                                image = renderFilledCircleBase64Png(
                                                     fillColorHex = customImageColorHex,
                                                     sizePx = 48
                                                 )
-                                            ),
-                                            widthDp = 40,
-                                            heightDp = 40
-                                        )
+                                            )
+                                            annotations + PointAnnotation(
+                                                id = UUID.randomUUID().toString(),
+                                                coordinate = coordinate,
+                                                title = normalizedTitle,
+                                                subtitle = annotationSubtitle.ifBlank { null },
+                                                point = payload
+                                            )
+                                        }
                                     }
-                                    annotations = annotations + MKAnnotation(
-                                        id = UUID.randomUUID().toString(),
-                                        coordinate = coordinate,
-                                        title = annotationTitle.ifBlank { "Pinned" },
-                                        subtitle = annotationSubtitle.ifBlank { null },
-                                        style = annotationStyle
-                                    )
                                 }
 
                                 DrawMode.Polyline,
@@ -596,7 +601,7 @@ internal fun AppScreen() {
                             modifier = Modifier.fillMaxWidth()
                         )
 
-                        if (annotationVisualStyle == AnnotationVisualStyle.Default) {
+                        if (annotationVisualStyle == AnnotationVisualStyle.Marker) {
                             EnumSelector(
                                 label = "Marker Glyph Mode",
                                 value = markerGlyphMode,
@@ -630,7 +635,7 @@ internal fun AppScreen() {
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Text(
-                                text = "Custom image is generated in demo and passed as Base64 PNG.",
+                                text = "Custom mode stores Point(title, image) payload and renders a title+image badge.",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -767,6 +772,44 @@ internal fun AppScreen() {
             }
         }
     }
+}
+
+private data class Point(
+    val title: String,
+    val image: String
+)
+
+private class PointAnnotation(
+    override val id: String,
+    override val coordinate: MKCoordinate,
+    override val title: String?,
+    override val subtitle: String?,
+    val point: Point
+) : MKAnnotation(
+    id = id,
+    coordinate = coordinate,
+    title = title,
+    subtitle = subtitle
+) {
+    override fun renderingStyle(): MKAnnotationStyle = MKAnnotationStyle.Image(
+        source = MKImageSource.Base64Png(
+            renderPointTitleImageBase64Png(
+                title = point.title,
+                imageBase64Png = point.image
+            )
+        ),
+        widthDp = 110,
+        heightDp = 28,
+        anchorX = 0.5,
+        anchorY = 1.0
+    )
+
+    override fun extraEquals(other: MKAnnotation): Boolean {
+        other as PointAnnotation
+        return point == other.point
+    }
+
+    override fun extraHashCode(): Int = point.hashCode()
 }
 
 private fun MKMapEvent.toDisplayText(): String {

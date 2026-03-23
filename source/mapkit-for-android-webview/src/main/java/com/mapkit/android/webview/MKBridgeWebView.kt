@@ -15,6 +15,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.webkit.WebViewAssetLoader
+import com.studiomk.mapkit.model.MKAnnotation
 import com.studiomk.mapkit.model.MKCoordinate
 import com.studiomk.mapkit.model.MKCoordinateRegion
 import com.studiomk.mapkit.model.MKCircleOverlay
@@ -23,6 +24,7 @@ import com.studiomk.mapkit.model.MKMapEvent
 import com.studiomk.mapkit.model.MKMapState
 import com.studiomk.mapkit.model.MKAnnotationStyle
 import com.studiomk.mapkit.model.MKImageSource
+import com.studiomk.mapkit.model.MKOverlay
 import com.studiomk.mapkit.model.MKPoiFilter
 import com.studiomk.mapkit.model.MKPolygonOverlay
 import com.studiomk.mapkit.model.MKPolylineOverlay
@@ -47,6 +49,8 @@ class MKBridgeWebView @JvmOverloads constructor(
     private var pendingToken: String? = null
     private var lastAppliedPayload: String? = null
     private var pendingState: MKMapState? = null
+    private var latestAnnotationsById: Map<String, MKAnnotation> = emptyMap()
+    private var latestOverlaysById: Map<String, MKOverlay> = emptyMap()
 
     private val androidBridge = object {
         @JavascriptInterface
@@ -126,6 +130,8 @@ class MKBridgeWebView @JvmOverloads constructor(
     }
 
     fun applyState(state: MKMapState) {
+        latestAnnotationsById = state.annotations.associateBy { it.id }
+        latestOverlaysById = state.overlays.associateBy { it.id }
         pendingState = state
         if (!isPageReady || !isJsInitSent) return
         flushPendingState()
@@ -197,7 +203,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                         .put("subtitle", annotation.subtitle)
                         .put("isVisible", annotation.isVisible)
                         .put("isSelected", annotation.isSelected)
-                        .put("style", serializeAnnotationStyle(annotation.style))
+                        .put("style", serializeAnnotationStyle(annotation.renderingStyle()))
                 )
             }
         }
@@ -325,8 +331,32 @@ class MKBridgeWebView @JvmOverloads constructor(
                 )
             )
 
-            "annotationTapped" -> MKMapEvent.AnnotationTapped(json.getString("id"))
-            "overlayTapped" -> MKMapEvent.OverlayTapped(json.getString("id"))
+            "annotationTapped" -> {
+                val id = json.getString("id")
+                val annotation = latestAnnotationsById[id]
+                if (annotation != null) {
+                    MKMapEvent.AnnotationTapped(annotation)
+                } else {
+                    MKMapEvent.MapError(
+                        MKMapErrorCause.BridgeFailure(
+                            "annotationTapped id=$id was not found in latest state"
+                        )
+                    )
+                }
+            }
+            "overlayTapped" -> {
+                val id = json.getString("id")
+                val overlay = latestOverlaysById[id]
+                if (overlay != null) {
+                    MKMapEvent.OverlayTapped(overlay)
+                } else {
+                    MKMapEvent.MapError(
+                        MKMapErrorCause.BridgeFailure(
+                            "overlayTapped id=$id was not found in latest state"
+                        )
+                    )
+                }
+            }
             "bridgeError" -> MKMapEvent.MapError(
                 MKMapErrorCause.BridgeFailure(json.optString("message", "bridge error"))
             )
@@ -348,7 +378,7 @@ class MKBridgeWebView @JvmOverloads constructor(
 
     private fun serializeAnnotationStyle(style: MKAnnotationStyle): JSONObject {
         return when (style) {
-            is MKAnnotationStyle.Default -> JSONObject()
+            is MKAnnotationStyle.Marker -> JSONObject()
                 .put("kind", "default")
                 .put("tintHex", style.tintHex)
                 .put("glyphText", style.glyphText)
@@ -357,7 +387,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                     style.glyphImageSource?.let { serializeImageSource(it) }
                 )
 
-            is MKAnnotationStyle.CustomImage -> JSONObject()
+            is MKAnnotationStyle.Image -> JSONObject()
                 .put("kind", "customImage")
                 .put("source", serializeImageSource(style.source))
                 .put("widthDp", style.widthDp)

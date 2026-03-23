@@ -62,12 +62,12 @@ sealed interface MKImageSource {
 }
 
 sealed interface MKAnnotationStyle {
-    data class Default(
-        val tintHex: String? = null,
+    data class Marker(
+        val tintHex: String = "#FF3B30",
         val glyphText: String? = null,
-        val glyphImageSource: MKImageSource? = null
+        val glyphImageSource: MKImageSource? = MKImageSource.ResourceName("pin")
     ) : MKAnnotationStyle
-    data class CustomImage(
+    data class Image(
         val source: MKImageSource,
         val widthDp: Int,
         val heightDp: Int,
@@ -76,15 +76,84 @@ sealed interface MKAnnotationStyle {
     ) : MKAnnotationStyle
 }
 
-data class MKAnnotation(
-    val id: String,
-    val coordinate: MKCoordinate,
-    val title: String? = null,
-    val subtitle: String? = null,
-    val isVisible: Boolean = true,
-    val isSelected: Boolean = false,
-    val style: MKAnnotationStyle = MKAnnotationStyle.Default()
-)
+open class MKAnnotation(
+    open val id: String,
+    open val coordinate: MKCoordinate,
+    open val title: String? = null,
+    open val subtitle: String? = null,
+    open val isVisible: Boolean = true,
+    open val isSelected: Boolean = false
+) {
+    open fun renderingStyle(): MKAnnotationStyle = MKAnnotationStyle.Marker()
+
+    protected open fun extraEquals(other: MKAnnotation): Boolean = true
+
+    protected open fun extraHashCode(): Int = 0
+
+    final override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+        other as MKAnnotation
+
+        return id == other.id &&
+            coordinate == other.coordinate &&
+            title == other.title &&
+            subtitle == other.subtitle &&
+            isVisible == other.isVisible &&
+            isSelected == other.isSelected &&
+            extraEquals(other)
+    }
+
+    final override fun hashCode(): Int = listOf(
+        id,
+        coordinate,
+        title,
+        subtitle,
+        isVisible,
+        isSelected,
+        extraHashCode()
+    ).hashCode()
+
+    override fun toString(): String = "${this::class.simpleName}(id=$id)"
+}
+
+class MKMarkerAnnotation(
+    override val id: String,
+    override val coordinate: MKCoordinate,
+    override val title: String? = null,
+    override val subtitle: String? = null,
+    override val isVisible: Boolean = true,
+    override val isSelected: Boolean = false,
+    val tintHex: String = "#FF3B30",
+    val glyphText: String? = null,
+    val glyphImageSource: MKImageSource? = MKImageSource.ResourceName("pin")
+) : MKAnnotation(
+    id = id,
+    coordinate = coordinate,
+    title = title,
+    subtitle = subtitle,
+    isVisible = isVisible,
+    isSelected = isSelected
+) {
+    override fun renderingStyle(): MKAnnotationStyle = MKAnnotationStyle.Marker(
+        tintHex = tintHex,
+        glyphText = glyphText,
+        glyphImageSource = glyphImageSource
+    )
+
+    override fun extraEquals(other: MKAnnotation): Boolean {
+        other as MKMarkerAnnotation
+        return tintHex == other.tintHex &&
+            glyphText == other.glyphText &&
+            glyphImageSource == other.glyphImageSource
+    }
+
+    override fun extraHashCode(): Int = listOf(
+        tintHex,
+        glyphText,
+        glyphImageSource
+    ).hashCode()
+}
 
 data class MKOverlayStyle(
     val strokeColorHex: String = "#007AFF",
@@ -214,7 +283,11 @@ sealed interface MKMapEvent {
     data class RegionDidChange(val region: MKCoordinateRegion, val settled: Boolean) : MKMapEvent
     data class MapTapped(val coordinate: MKCoordinate) : MKMapEvent
     data class LongPress(val coordinate: MKCoordinate) : MKMapEvent
-    data class AnnotationTapped(val id: String) : MKMapEvent
-    data class OverlayTapped(val id: String) : MKMapEvent
+    data class AnnotationTapped(val annotation: MKAnnotation) : MKMapEvent {
+        val id: String get() = annotation.id
+    }
+    data class OverlayTapped(val overlay: MKOverlay) : MKMapEvent {
+        val id: String get() = overlay.id
+    }
     data class UserLocationUpdated(val coordinate: MKCoordinate) : MKMapEvent
 }

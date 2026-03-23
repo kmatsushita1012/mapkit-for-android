@@ -1,9 +1,11 @@
 package com.studiomk.mapkit.demo
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import android.util.Base64
 import com.studiomk.mapkit.model.MKOverlayStyle
 import java.io.ByteArrayOutputStream
@@ -33,6 +35,58 @@ internal fun renderFilledCircleBase64Png(fillColorHex: String, sizePx: Int): Str
     bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
     val bytes = out.toByteArray()
     return Base64.encodeToString(bytes, Base64.NO_WRAP)
+}
+
+internal fun renderPointTitleImageBase64Png(title: String, imageBase64Png: String): String {
+    val iconSize = 40
+    val width = 220
+    val height = 56
+    val corner = 18f
+    val padding = 8f
+
+    val decodedBytes = try {
+        Base64.decode(imageBase64Png, Base64.DEFAULT)
+    } catch (_: Throwable) {
+        null
+    }
+    val iconBitmap = decodedBytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+        ?: run {
+            val fallbackBytes = Base64.decode(renderFilledCircleBase64Png("#F97316", iconSize), Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(fallbackBytes, 0, fallbackBytes.size)
+        }
+
+    val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    val bgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = Color.WHITE
+    }
+    val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
+        color = Color.parseColor("#D1D5DB")
+    }
+    val bubbleRect = RectF(0f, 0f, width.toFloat(), height.toFloat())
+    canvas.drawRoundRect(bubbleRect, corner, corner, bgPaint)
+    canvas.drawRoundRect(bubbleRect, corner, corner, borderPaint)
+
+    val iconTop = (height - iconSize) / 2f
+    val iconRect = RectF(padding, iconTop, padding + iconSize, iconTop + iconSize)
+    canvas.drawBitmap(iconBitmap, null, iconRect, null)
+
+    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#111827")
+        textSize = 22f
+    }
+    val maxChars = 14
+    val label = title.trim().ifBlank { "Pinned" }
+        .let { if (it.length > maxChars) it.take(maxChars - 1) + "…" else it }
+    val baseline = (height / 2f) - ((textPaint.descent() + textPaint.ascent()) / 2f)
+    canvas.drawText(label, padding + iconSize + 10f, baseline, textPaint)
+
+    val out = ByteArrayOutputStream()
+    bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
+    return Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
 }
 
 internal fun parseHexColor(hex: String, fallback: Int): Int {
