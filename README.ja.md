@@ -1,13 +1,13 @@
 # MapKit for Android
 
-English | [日本語](/Users/matsushitakazuya/private/MapKitForAndroid/README.ja.md)
+[English](/Users/matsushitakazuya/private/MapKitForAndroid/README.md) | 日本語
 
-Kotlin library that bridges MapKit JS on Android `WebView`.
-You can control region, annotations, overlays, and map options through Kotlin models and `MKMapView` for Compose.
+MapKit JS を Android `WebView` で扱うための Kotlin ライブラリです。  
+Compose から `MKMapView` を使って地図を表示し、Annotation / Overlay / Region / Option を Kotlin モデルで制御できます。
 
-## Install (JitPack, 0.1.0)
+## インストール (JitPack, 0.1.0)
 
-### 1. Add JitPack to `settings.gradle.kts`
+### 1. `settings.gradle.kts` に JitPack を追加
 
 ```kotlin
 dependencyResolutionManagement {
@@ -20,9 +20,9 @@ dependencyResolutionManagement {
 }
 ```
 
-### 2. Add dependency
+### 2. 依存を追加
 
-Recommended: single aggregate artifact.
+推奨は単一artifactです。
 
 ```kotlin
 dependencies {
@@ -30,7 +30,7 @@ dependencies {
 }
 ```
 
-You can also use per-module artifacts:
+必要に応じて個別モジュールも選択できます。
 
 ```kotlin
 dependencies {
@@ -40,11 +40,11 @@ dependencies {
 }
 ```
 
-## Prerequisites
+## 事前準備
 
-### 1. Prepare Apple MapKit JS token
+### 1. Apple MapKit JS Token を用意
 
-Generate a MapKit JS JWT and inject it at app startup via `MKMapKit.init(token)`.
+MapKit JS 用 JWT token を発行し、アプリ起動時に `MKMapKit.init(token)` で注入します。
 
 ```kotlin
 class MainActivity : ComponentActivity() {
@@ -58,13 +58,13 @@ class MainActivity : ComponentActivity() {
 }
 ```
 
-`local.properties` example:
+`local.properties` 例:
 
 ```properties
 MAPKIT_JS_TOKEN=YOUR_MAPKIT_JS_JWT
 ```
 
-`build.gradle.kts` example to load token from `local.properties` with env-var fallback:
+`build.gradle.kts` で `local.properties` と環境変数をフォールバックして `BuildConfig` に渡す例:
 
 ```kotlin
 import java.util.Properties
@@ -86,11 +86,11 @@ android {
 }
 ```
 
-See [docs/setup/mapkitjs-token-env.md](/Users/matsushitakazuya/private/MapKitForAndroid/docs/setup/mapkitjs-token-env.md) for details.
+トークン設定の詳細は [docs/setup/mapkitjs-token-env.md](/Users/matsushitakazuya/private/MapKitForAndroid/docs/setup/mapkitjs-token-env.md) を参照してください。
 
-### 2. Android permissions / manifest
+### 2. Android permission / manifest
 
-At minimum:
+最低限、以下を宣言してください。
 
 ```xml
 <uses-permission android:name="android.permission.INTERNET" />
@@ -98,9 +98,9 @@ At minimum:
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 ```
 
-If `showsUserLocation` is enabled, runtime location permission is also required.
+`showsUserLocation` を有効化する場合は runtime permission の許可も必要です。
 
-## Minimal usage (Compose)
+## 最小利用例 (Compose)
 
 ```kotlin
 @Composable
@@ -138,10 +138,10 @@ fun SampleMap() {
 }
 ```
 
-## Modules
+## モジュール構成
 
-- `source/mapkit-android`: aggregate artifact for easier adoption
-- `source/mapkit-android-core`: public models and init API
+- `source/mapkit-android`: 導入を簡単にする集約モジュール
+- `source/mapkit-android-core`: 公開モデル/初期化 API
 - `source/mapkit-android-webview`: WebView + MapKit JS bridge
-- `source/mapkit-android-compose`: Compose API (`MKMapView`)
-- `example/app`: sample app
+- `source/mapkit-android-compose`: Compose 向け API (`MKMapView`)
+- `example/app`: サンプルアプリ
