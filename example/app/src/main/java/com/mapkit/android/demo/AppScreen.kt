@@ -84,12 +84,12 @@ internal fun AppScreen() {
     }
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var drawMode by remember { mutableStateOf(DrawMode.Browse) }
-    var modeExpanded by remember { mutableStateOf(false) }
+    var activeDrawMode by remember { mutableStateOf(DrawMode.None) }
     var draftPoints by remember { mutableStateOf<List<MKCoordinate>>(emptyList()) }
     var lastEventText by remember { mutableStateOf("No events yet") }
 
-    var placementTrigger by remember { mutableStateOf(PlacementTrigger.LongPress) }
+    var tapAction by remember { mutableStateOf(DrawMode.None) }
+    var longPressAction by remember { mutableStateOf(DrawMode.Annotation) }
     var annotationVisualStyle by remember { mutableStateOf(AnnotationVisualStyle.Marker) }
     var annotationTitle by remember { mutableStateOf("Pinned") }
     var annotationSubtitle by remember { mutableStateOf("") }
@@ -126,7 +126,7 @@ internal fun AppScreen() {
 
     val selectedTab = if (selectedTabIndex == 0) AppTab.Map else AppTab.Settings
 
-    val draftOverlay = when (drawMode) {
+    val draftOverlay = when (activeDrawMode) {
         DrawMode.Polyline -> if (draftPoints.size >= 2) {
             listOf(
                 MKPolylineOverlay(
@@ -237,30 +237,22 @@ internal fun AppScreen() {
                             .fillMaxWidth()
                             .height(44.dp)
                     )
-                    DrawModeSelector(
-                        drawMode = drawMode,
-                        expanded = modeExpanded,
-                        onExpandedChange = { modeExpanded = it },
-                        onModeSelected = { mode ->
-                            drawMode = mode
-                            draftPoints = emptyList()
-                            modeExpanded = false
-                        }
-                    )
-
-                    if (drawMode == DrawMode.Polyline || drawMode == DrawMode.Polygon || drawMode == DrawMode.Circle) {
+                    if (activeDrawMode == DrawMode.Polyline || activeDrawMode == DrawMode.Polygon || activeDrawMode == DrawMode.Circle) {
                         DraftGeometryActionRow(
-                            drawMode = drawMode,
+                            drawMode = activeDrawMode,
                             draftPointCount = draftPoints.size,
                             onUndo = {
                                 if (draftPoints.isNotEmpty()) {
                                     draftPoints = draftPoints.dropLast(1)
                                 }
                             },
-                            onClear = { draftPoints = emptyList() },
+                            onClear = {
+                                draftPoints = emptyList()
+                                activeDrawMode = DrawMode.None
+                            },
                             onConfirm = {
                                 val id = UUID.randomUUID().toString()
-                                committedOverlays = committedOverlays + when (drawMode) {
+                                committedOverlays = committedOverlays + when (activeDrawMode) {
                                     DrawMode.Polyline -> MKPolylineOverlay(
                                         id = id,
                                         points = draftPoints,
@@ -302,6 +294,7 @@ internal fun AppScreen() {
                                     else -> return@DraftGeometryActionRow
                                 }
                                 draftPoints = emptyList()
+                                activeDrawMode = DrawMode.None
                             }
                         )
                     }
@@ -315,9 +308,9 @@ internal fun AppScreen() {
                     onEvent = { event ->
                         lastEventText = event.toDisplayText()
 
-                        fun addGeometryPoint(coordinate: MKCoordinate) {
-                            when (drawMode) {
-                                DrawMode.Browse -> Unit
+                        fun addGeometryPoint(action: DrawMode, coordinate: MKCoordinate) {
+                            when (action) {
+                                DrawMode.None -> Unit
                                 DrawMode.Annotation -> {
                                     val normalizedTitle = annotationTitle.ifBlank { "Pinned" }
                                     annotations = when (annotationVisualStyle) {
@@ -360,10 +353,15 @@ internal fun AppScreen() {
 
                                 DrawMode.Polyline,
                                 DrawMode.Polygon -> {
+                                    if (activeDrawMode != action) {
+                                        activeDrawMode = action
+                                        draftPoints = emptyList()
+                                    }
                                     draftPoints = draftPoints + coordinate
                                 }
 
                                 DrawMode.Circle -> {
+                                    activeDrawMode = DrawMode.Circle
                                     draftPoints = listOf(coordinate)
                                 }
                             }
@@ -378,15 +376,11 @@ internal fun AppScreen() {
                             }
 
                             is MKMapEvent.LongPress -> {
-                                if (placementTrigger == PlacementTrigger.LongPress) {
-                                    addGeometryPoint(event.coordinate)
-                                }
+                                addGeometryPoint(longPressAction, event.coordinate)
                             }
 
                             is MKMapEvent.MapTapped -> {
-                                if (placementTrigger == PlacementTrigger.Tap) {
-                                    addGeometryPoint(event.coordinate)
-                                }
+                                addGeometryPoint(tapAction, event.coordinate)
                             }
 
                             else -> Unit
@@ -577,10 +571,16 @@ internal fun AppScreen() {
                     )
                     if (annotationConfigExpanded) {
                         EnumSelector(
-                            label = "Placement Trigger",
-                            value = placementTrigger,
-                            values = PlacementTrigger.entries,
-                            onSelected = { placementTrigger = it }
+                            label = "Tap Action",
+                            value = tapAction,
+                            values = DrawMode.entries,
+                            onSelected = { tapAction = it }
+                        )
+                        EnumSelector(
+                            label = "Long Press Action",
+                            value = longPressAction,
+                            values = DrawMode.entries,
+                            onSelected = { longPressAction = it }
                         )
                         EnumSelector(
                             label = "Annotation Style",
