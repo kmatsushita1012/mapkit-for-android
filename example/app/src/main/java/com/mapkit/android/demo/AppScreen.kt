@@ -480,6 +480,18 @@ internal fun AppScreen() {
                                 )
                             }
                         )
+                        EnumSelector(
+                            label = "Tap Action",
+                            value = tapAction,
+                            values = DrawMode.entries,
+                            onSelected = { tapAction = it }
+                        )
+                        EnumSelector(
+                            label = "Long Press Action",
+                            value = longPressAction,
+                            values = DrawMode.entries,
+                            onSelected = { longPressAction = it }
+                        )
 
                         ToggleRow(
                             label = "User Location",
@@ -570,18 +582,6 @@ internal fun AppScreen() {
                         onExpandedChange = { annotationConfigExpanded = it }
                     )
                     if (annotationConfigExpanded) {
-                        EnumSelector(
-                            label = "Tap Action",
-                            value = tapAction,
-                            values = DrawMode.entries,
-                            onSelected = { tapAction = it }
-                        )
-                        EnumSelector(
-                            label = "Long Press Action",
-                            value = longPressAction,
-                            values = DrawMode.entries,
-                            onSelected = { longPressAction = it }
-                        )
                         EnumSelector(
                             label = "Annotation Style",
                             value = annotationVisualStyle,
