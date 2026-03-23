@@ -402,9 +402,12 @@
 
     state.map.addEventListener("select", function (event) {
       try {
-        if (event && event.annotation && event.annotation.data && event.annotation.data.id) {
-          debugLog("emit annotationTapped id=" + String(event.annotation.data.id));
-          emit({ type: "annotationTapped", id: String(event.annotation.data.id) });
+        const annotationId = event && event.annotation
+          ? (event.annotation.id || (event.annotation.data && event.annotation.data.id))
+          : null;
+        if (annotationId) {
+          debugLog("emit annotationTapped id=" + String(annotationId));
+          emit({ type: "annotationTapped", id: String(annotationId) });
           return;
         }
         if (event && event.overlay && event.overlay.data && event.overlay.data.id) {
@@ -443,6 +446,8 @@
         const imageUrl = resolveImageSource(style.source);
         const h = Number(style.heightDp || 36);
         annotation = new window.mapkit.ImageAnnotation(coord, {
+          id: item.id,
+          data: { id: item.id },
           title: item.title || item.id,
           subtitle: item.subtitle || undefined,
           url: { 1: imageUrl, 2: imageUrl, 3: imageUrl },
@@ -450,6 +455,8 @@
         });
       } else {
         const options = {
+          id: item.id,
+          data: { id: item.id },
           title: item.title || item.id,
           subtitle: item.subtitle || undefined,
           color: style.tintHex || undefined,
@@ -466,12 +473,16 @@
       }
     } catch (_) {
       annotation = new window.mapkit.MarkerAnnotation(coord, {
+        id: item.id,
+        data: { id: item.id },
         title: item.title || item.id,
         subtitle: item.subtitle || undefined,
       });
     }
     if (!annotation) return null;
-    annotation.data = { id: item.id };
+    if (!annotation.data) {
+      annotation.data = { id: item.id };
+    }
     if (item.isSelected && typeof annotation.selected !== "undefined") {
       annotation.selected = true;
     }
