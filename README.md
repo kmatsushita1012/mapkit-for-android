@@ -62,6 +62,28 @@ class MainActivity : ComponentActivity() {
 MAPKIT_JS_TOKEN=YOUR_MAPKIT_JS_JWT
 ```
 
+`build.gradle.kts` で `local.properties` と環境変数をフォールバックして `BuildConfig` に渡す例:
+
+```kotlin
+import java.util.Properties
+
+android {
+    defaultConfig {
+        val localProps = Properties().apply {
+            val f = rootProject.file("local.properties")
+            if (f.exists()) f.inputStream().use(::load)
+        }
+        val mapToken = localProps.getProperty("MAPKIT_JS_TOKEN")
+            ?: System.getenv("MAPKIT_JS_TOKEN")
+            ?: "DUMMY_TOKEN_FOR_DEMO"
+        val escapedMapToken = mapToken
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+        buildConfigField("String", "MAPKIT_JS_TOKEN", "\"$escapedMapToken\"")
+    }
+}
+```
+
 トークン設定の詳細は [docs/setup/mapkitjs-token-env.md](/Users/matsushitakazuya/private/MapKitForAndroid/docs/setup/mapkitjs-token-env.md) を参照してください。
 
 ### 2. Android permission / manifest
