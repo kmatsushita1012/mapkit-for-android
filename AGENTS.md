@@ -3,10 +3,10 @@
 このリポジトリで作業するエージェント向けガイド。
 
 ## 1. リポジトリ構成
-- `source/mapkit-android-core`: 公開モデルと初期化API
-- `source/mapkit-android-webview`: WebView + MapKit JS ブリッジ
-- `source/mapkit-android-compose`: Compose向け `MKMapView`
-- `source/mapkit-android`: 利用者向け集約モジュール
+- `source/mapkit-for-android-core`: 公開モデルと初期化API
+- `source/mapkit-for-android-webview`: WebView + MapKit JS ブリッジ
+- `source/mapkit-for-android-compose`: Compose向け `MKMapView`
+- `source/mapkit-for-android`: 利用者向け集約モジュール
 - `example/app`: 動作確認用アプリ
 - `docs/design`: 正式仕様
 - `feature_request`: 実装前の要求仕様メモ

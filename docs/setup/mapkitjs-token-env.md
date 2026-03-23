@@ -1,6 +1,6 @@
 # MapKit JS トークンと環境変数設定
 
-このドキュメントは Apple の MapKit JS 公式情報を前提に、`MapKitForAndroid` で `MAPKIT_JS_TOKEN` を安全に渡す手順をまとめたものです。
+このドキュメントは Apple の MapKit JS 公式情報を前提に、`mapkit-for-android` で `MAPKIT_JS_TOKEN` を安全に渡す手順をまとめたものです。
 
 ## 1. 前提
 

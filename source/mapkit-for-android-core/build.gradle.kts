@@ -1,13 +1,12 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
     id("maven-publish")
     id("signing")
 }
 
 android {
-    namespace = "com.mapkit.android.compose"
+    namespace = "com.mapkit.android.core"
     compileSdk = 36
 
     defaultConfig {
@@ -21,10 +20,6 @@ android {
         }
     }
 
-    buildFeatures {
-        compose = true
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -35,25 +30,19 @@ android {
 }
 
 dependencies {
-    api(project(":source:mapkit-android-core"))
-    implementation(project(":source:mapkit-android-webview"))
     implementation(libs.androidx.core.ktx)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
-    debugImplementation(libs.androidx.compose.ui.tooling)
+    testImplementation(libs.junit)
 }
 
 publishing {
     publications {
         register<MavenPublication>("release") {
             groupId = providers.gradleProperty("POM_GROUP_ID").get()
-            artifactId = "mapkit-android-compose"
+            artifactId = "mapkit-for-android-core"
             version = providers.gradleProperty("VERSION_NAME").get()
 
             pom {
-                name.set("MapKit Android Compose")
+                name.set("MapKit Android Core")
                 description.set(providers.gradleProperty("POM_DESCRIPTION").get())
                 url.set(providers.gradleProperty("POM_URL").get())
                 licenses {

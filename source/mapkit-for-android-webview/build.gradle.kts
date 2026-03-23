@@ -30,7 +30,7 @@ android {
 }
 
 dependencies {
-    api(project(":source:mapkit-android-core"))
+    api(project(":source:mapkit-for-android-core"))
     implementation(libs.androidx.webkit)
     testImplementation(libs.junit)
 }
@@ -39,7 +39,7 @@ publishing {
     publications {
         register<MavenPublication>("release") {
             groupId = providers.gradleProperty("POM_GROUP_ID").get()
-            artifactId = "mapkit-android-webview"
+            artifactId = "mapkit-for-android-webview"
             version = providers.gradleProperty("VERSION_NAME").get()
 
             pom {

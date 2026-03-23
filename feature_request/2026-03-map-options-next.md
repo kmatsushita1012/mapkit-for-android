@@ -1,7 +1,7 @@
 # Feature Request: Map設定系の拡張候補 (PlaceDetail除外)
 
 作成日: 2026-03-22
-対象: `MapKitForAndroid`
+対象: `mapkit-for-android`
 
 ## 方針
 - 本ファイルは「実装候補の要求仕様」を管理する。

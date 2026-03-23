@@ -30,7 +30,7 @@ android {
 }
 
 dependencies {
-    api(project(":source:mapkit-android-compose"))
+    api(project(":source:mapkit-for-android-compose"))
 }
 
 publishing {

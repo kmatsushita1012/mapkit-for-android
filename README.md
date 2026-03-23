@@ -34,9 +34,9 @@ You can also use per-module artifacts:
 
 ```kotlin
 dependencies {
-    implementation("io.github.kmatsushita1012:mapkit-android-core:0.1.1")
-    implementation("io.github.kmatsushita1012:mapkit-android-webview:0.1.1")
-    implementation("io.github.kmatsushita1012:mapkit-android-compose:0.1.1")
+    implementation("io.github.kmatsushita1012:mapkit-for-android-core:0.1.1")
+    implementation("io.github.kmatsushita1012:mapkit-for-android-webview:0.1.1")
+    implementation("io.github.kmatsushita1012:mapkit-for-android-compose:0.1.1")
 }
 ```
 
@@ -140,8 +140,8 @@ fun SampleMap() {
 
 ## Modules
 
-- `source/mapkit-android`: aggregate artifact for easier adoption
-- `source/mapkit-android-core`: public models and init API
-- `source/mapkit-android-webview`: WebView + MapKit JS bridge
-- `source/mapkit-android-compose`: Compose API (`MKMapView`)
+- `source/mapkit-for-android`: aggregate artifact for easier adoption
+- `source/mapkit-for-android-core`: public models and init API
+- `source/mapkit-for-android-webview`: WebView + MapKit JS bridge
+- `source/mapkit-for-android-compose`: Compose API (`MKMapView`)
 - `example/app`: sample app
