@@ -188,6 +188,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                         overlayJson
                             .put("strokeColor", overlay.style.strokeColorHex)
                             .put("strokeWidth", overlay.style.strokeWidth)
+                            .put("lineDashPattern", overlay.style.lineDashPattern?.let { JSONArray(it) })
                     }
                     is MKPolygonOverlay -> {
                         overlayJson.put(
@@ -202,6 +203,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                             .put("strokeColor", overlay.style.strokeColorHex)
                             .put("strokeWidth", overlay.style.strokeWidth)
                             .put("fillColor", overlay.style.fillColorHex)
+                            .put("lineDashPattern", overlay.style.lineDashPattern?.let { JSONArray(it) })
                     }
                     is MKCircleOverlay -> {
                         overlayJson
@@ -211,6 +213,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                             .put("strokeColor", overlay.style.strokeColorHex)
                             .put("strokeWidth", overlay.style.strokeWidth)
                             .put("fillColor", overlay.style.fillColorHex)
+                            .put("lineDashPattern", overlay.style.lineDashPattern?.let { JSONArray(it) })
                     }
                     else -> Unit
                 }

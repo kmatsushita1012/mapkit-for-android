@@ -522,10 +522,14 @@
   }
 
   function applyOverlayStyle(item) {
+    const dash = Array.isArray(item.lineDashPattern) && item.lineDashPattern.length > 0
+      ? item.lineDashPattern
+      : undefined;
     return new window.mapkit.Style({
       lineWidth: item.strokeWidth || 3,
       strokeColor: item.strokeColor || "#0EA5E9",
       fillColor: item.fillColor || undefined,
+      lineDash: dash,
     });
   }
 

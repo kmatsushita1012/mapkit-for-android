@@ -144,6 +144,12 @@ private fun DemoScreen() {
     var customImageColorHex by remember { mutableStateOf("#f97316") }
     var baseConfigExpanded by remember { mutableStateOf(true) }
     var annotationConfigExpanded by remember { mutableStateOf(true) }
+    var polylineConfigExpanded by remember { mutableStateOf(true) }
+    var polylineColorHex by remember { mutableStateOf("#0ea5e9") }
+    var polylineWidthText by remember { mutableStateOf("4.0") }
+    var polylineDashed by remember { mutableStateOf(false) }
+    var polylineDashLengthText by remember { mutableStateOf("10") }
+    var polylineGapLengthText by remember { mutableStateOf("6") }
 
     val selectedTab = if (selectedTabIndex == 0) DemoTab.Map else DemoTab.Settings
 
@@ -153,7 +159,13 @@ private fun DemoScreen() {
                 MKPolylineOverlay(
                     id = "draft-polyline",
                     points = draftPoints,
-                    style = MKOverlayStyle(strokeColorHex = "#ef4444", strokeWidth = 4.0)
+                    style = buildPolylineOverlayStyle(
+                        colorHex = polylineColorHex,
+                        widthText = polylineWidthText,
+                        dashed = polylineDashed,
+                        dashLengthText = polylineDashLengthText,
+                        gapLengthText = polylineGapLengthText
+                    )
                 )
             )
         } else {
@@ -292,7 +304,13 @@ private fun DemoScreen() {
                                         DrawMode.Polyline -> MKPolylineOverlay(
                                             id = id,
                                             points = draftPoints,
-                                            style = MKOverlayStyle(strokeColorHex = "#0ea5e9", strokeWidth = 4.0)
+                                            style = buildPolylineOverlayStyle(
+                                                colorHex = polylineColorHex,
+                                                widthText = polylineWidthText,
+                                                dashed = polylineDashed,
+                                                dashLengthText = polylineDashLengthText,
+                                                gapLengthText = polylineGapLengthText
+                                            )
                                         )
 
                                         DrawMode.Polygon -> MKPolygonOverlay(
@@ -489,6 +507,45 @@ private fun DemoScreen() {
                             Text(
                                 text = "Custom image is generated in demo and passed as Base64 PNG.",
                                 style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+                    }
+
+                    ConfigSectionHeader(
+                        title = "Polyline Config",
+                        expanded = polylineConfigExpanded,
+                        onExpandedChange = { polylineConfigExpanded = it }
+                    )
+                    if (polylineConfigExpanded) {
+                        OutlinedTextField(
+                            value = polylineColorHex,
+                            onValueChange = { polylineColorHex = it },
+                            label = { Text("Polyline Color (hex)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = polylineWidthText,
+                            onValueChange = { polylineWidthText = it },
+                            label = { Text("Polyline Width") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        ToggleRow(
+                            label = "Polyline Dashed",
+                            checked = polylineDashed,
+                            onCheckedChange = { polylineDashed = it }
+                        )
+                        if (polylineDashed) {
+                            OutlinedTextField(
+                                value = polylineDashLengthText,
+                                onValueChange = { polylineDashLengthText = it },
+                                label = { Text("Dash Length") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = polylineGapLengthText,
+                                onValueChange = { polylineGapLengthText = it },
+                                label = { Text("Gap Length") },
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
                     }
@@ -745,4 +802,32 @@ private fun parseHexColor(hex: String, fallback: Int): Int {
     } catch (_: Throwable) {
         fallback
     }
+}
+
+private fun buildPolylineOverlayStyle(
+    colorHex: String,
+    widthText: String,
+    dashed: Boolean,
+    dashLengthText: String,
+    gapLengthText: String
+): MKOverlayStyle {
+    val width = parsePositiveDouble(widthText, fallback = 4.0)
+    val dashPattern = if (dashed) {
+        listOf(
+            parsePositiveDouble(dashLengthText, fallback = 10.0),
+            parsePositiveDouble(gapLengthText, fallback = 6.0)
+        )
+    } else {
+        null
+    }
+    return MKOverlayStyle(
+        strokeColorHex = colorHex.ifBlank { "#0ea5e9" },
+        strokeWidth = width,
+        lineDashPattern = dashPattern
+    )
+}
+
+private fun parsePositiveDouble(text: String, fallback: Double): Double {
+    val parsed = text.toDoubleOrNull() ?: return fallback
+    return if (parsed > 0.0) parsed else fallback
 }
