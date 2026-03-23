@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.mapkit.android.core"
+    namespace = "com.studiomk.mapkit.core"
     compileSdk = 36
 
     defaultConfig {
@@ -38,7 +38,7 @@ publishing {
     publications {
         register<MavenPublication>("release") {
             groupId = providers.gradleProperty("POM_GROUP_ID").get()
-            artifactId = "mapkit-for-android-core"
+            artifactId = "mapkit-core"
             version = providers.gradleProperty("VERSION_NAME").get()
 
             pom {

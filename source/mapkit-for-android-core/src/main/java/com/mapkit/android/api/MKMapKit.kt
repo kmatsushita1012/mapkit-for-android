@@ -1,4 +1,4 @@
-package com.mapkit.android.api
+package com.studiomk.mapkit.api
 
 import java.util.concurrent.atomic.AtomicReference
 

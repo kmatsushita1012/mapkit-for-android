@@ -1,12 +1,12 @@
-package com.mapkit.android.api
+package com.studiomk.mapkit.api
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import com.mapkit.android.model.MKMapErrorCause
-import com.mapkit.android.model.MKMapEvent
-import com.mapkit.android.model.MKMapState
-import com.mapkit.android.webview.MKBridgeWebView
+import com.studiomk.mapkit.model.MKMapErrorCause
+import com.studiomk.mapkit.model.MKMapEvent
+import com.studiomk.mapkit.model.MKMapState
+import com.studiomk.mapkit.webview.MKBridgeWebView
 import androidx.compose.ui.viewinterop.AndroidView
 
 class MKMapDebugController {

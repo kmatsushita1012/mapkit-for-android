@@ -1,4 +1,4 @@
-package com.mapkit.android.demo
+package com.studiomk.mapkit.demo
 
 import android.Manifest
 import android.util.Log
@@ -28,25 +28,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mapkit.android.api.MKMapView
-import com.mapkit.android.model.MKAnnotation
-import com.mapkit.android.model.MKAnnotationStyle
-import com.mapkit.android.model.MKAppearanceOption
-import com.mapkit.android.model.MKCameraZoomRange
-import com.mapkit.android.model.MKCircleOverlay
-import com.mapkit.android.model.MKCoordinate
-import com.mapkit.android.model.MKCoordinateRegion
-import com.mapkit.android.model.MKImageSource
-import com.mapkit.android.model.MKMapEvent
-import com.mapkit.android.model.MKMapLanguage
-import com.mapkit.android.model.MKMapOptions
-import com.mapkit.android.model.MKMapState
-import com.mapkit.android.model.MKMapStyle
-import com.mapkit.android.model.MKOverlay
-import com.mapkit.android.model.MKPoiFilter
-import com.mapkit.android.model.MKPolygonOverlay
-import com.mapkit.android.model.MKPolylineOverlay
-import com.mapkit.android.model.MKUserLocationOptions
+import com.studiomk.mapkit.api.MKMapView
+import com.studiomk.mapkit.model.MKAnnotation
+import com.studiomk.mapkit.model.MKAnnotationStyle
+import com.studiomk.mapkit.model.MKAppearanceOption
+import com.studiomk.mapkit.model.MKCameraZoomRange
+import com.studiomk.mapkit.model.MKCircleOverlay
+import com.studiomk.mapkit.model.MKCoordinate
+import com.studiomk.mapkit.model.MKCoordinateRegion
+import com.studiomk.mapkit.model.MKImageSource
+import com.studiomk.mapkit.model.MKMapEvent
+import com.studiomk.mapkit.model.MKMapLanguage
+import com.studiomk.mapkit.model.MKMapOptions
+import com.studiomk.mapkit.model.MKMapState
+import com.studiomk.mapkit.model.MKMapStyle
+import com.studiomk.mapkit.model.MKOverlay
+import com.studiomk.mapkit.model.MKPoiFilter
+import com.studiomk.mapkit.model.MKPolygonOverlay
+import com.studiomk.mapkit.model.MKPolylineOverlay
+import com.studiomk.mapkit.model.MKUserLocationOptions
 import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)

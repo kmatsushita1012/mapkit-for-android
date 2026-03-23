@@ -1,7 +1,7 @@
-package com.mapkit.android.webview.internal
+package com.studiomk.mapkit.webview.internal
 
-import com.mapkit.android.model.MKCoordinateRegion
-import com.mapkit.android.model.MKMapState
+import com.studiomk.mapkit.model.MKCoordinateRegion
+import com.studiomk.mapkit.model.MKMapState
 
 internal data class InternalMapState(
     val centerLat: Double,
@@ -19,7 +19,7 @@ internal object MKBridgeMapper {
     )
 
     fun toRegion(state: InternalMapState): MKCoordinateRegion = MKCoordinateRegion.fromCenter(
-        center = com.mapkit.android.model.MKCoordinate(
+        center = com.studiomk.mapkit.model.MKCoordinate(
             latitude = state.centerLat,
             longitude = state.centerLng
         ),

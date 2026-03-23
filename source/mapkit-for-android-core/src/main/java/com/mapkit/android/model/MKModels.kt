@@ -1,4 +1,4 @@
-package com.mapkit.android.model
+package com.studiomk.mapkit.model
 
 data class MKCoordinate(
     val latitude: Double,

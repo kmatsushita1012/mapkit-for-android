@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.mapkit.android.webview"
+    namespace = "com.studiomk.mapkit.webview"
     compileSdk = 36
 
     defaultConfig {
@@ -39,7 +39,7 @@ publishing {
     publications {
         register<MavenPublication>("release") {
             groupId = providers.gradleProperty("POM_GROUP_ID").get()
-            artifactId = "mapkit-for-android-webview"
+            artifactId = "mapkit-webview"
             version = providers.gradleProperty("VERSION_NAME").get()
 
             pom {

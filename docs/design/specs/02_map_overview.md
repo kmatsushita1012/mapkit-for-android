@@ -5,7 +5,7 @@
 ### 1. 公開 UI/API
 
 ```kotlin
-package com.mapkit.android.api
+package com.studiomk.mapkit.api
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -27,7 +27,7 @@ object MKMapKit {
 ### 2. 公開モデル
 
 ```kotlin
-package com.mapkit.android.model
+package com.studiomk.mapkit.model
 
 data class MKMapState(
     val region: MKCoordinateRegion,
@@ -40,7 +40,7 @@ data class MKMapState(
 ### 3. 公開イベント
 
 ```kotlin
-package com.mapkit.android.model
+package com.studiomk.mapkit.model
 
 sealed interface MKMapEvent {
     data object MapLoaded : MKMapEvent
@@ -64,9 +64,9 @@ sealed interface MKMapErrorCause {
 package com.example.app
 
 import androidx.compose.runtime.*
-import com.mapkit.android.api.MKMapKit
-import com.mapkit.android.api.MKMapView
-import com.mapkit.android.model.*
+import com.studiomk.mapkit.api.MKMapKit
+import com.studiomk.mapkit.api.MKMapView
+import com.studiomk.mapkit.model.*
 
 @Composable
 fun MapScreen() {

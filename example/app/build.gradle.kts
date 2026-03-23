@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.mapkit.android.demo"
+    namespace = "com.studiomk.mapkit.demo"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.mapkit.android.demo"
+        applicationId = "com.studiomk.mapkit.demo"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

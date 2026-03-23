@@ -1,9 +1,9 @@
-package com.mapkit.android.demo
+package com.studiomk.mapkit.demo
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.mapkit.android.api.MKMapKit
+import com.studiomk.mapkit.api.MKMapKit
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

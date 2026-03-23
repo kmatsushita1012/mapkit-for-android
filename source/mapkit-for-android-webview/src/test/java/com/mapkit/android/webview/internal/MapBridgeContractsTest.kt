@@ -1,8 +1,8 @@
-package com.mapkit.android.webview.internal
+package com.studiomk.mapkit.webview.internal
 
-import com.mapkit.android.model.MKCoordinate
-import com.mapkit.android.model.MKCoordinateRegion
-import com.mapkit.android.model.MKMapState
+import com.studiomk.mapkit.model.MKCoordinate
+import com.studiomk.mapkit.model.MKCoordinateRegion
+import com.studiomk.mapkit.model.MKMapState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

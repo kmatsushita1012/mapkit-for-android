@@ -26,7 +26,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("io.github.kmatsushita1012:mapkit-for-android:0.1.1")
+    implementation("io.github.kmatsushita1012:mapkit:0.1.1")
 }
 ```
 
@@ -34,9 +34,9 @@ dependencies {
 
 ```kotlin
 dependencies {
-    implementation("io.github.kmatsushita1012:mapkit-for-android-core:0.1.1")
-    implementation("io.github.kmatsushita1012:mapkit-for-android-webview:0.1.1")
-    implementation("io.github.kmatsushita1012:mapkit-for-android-compose:0.1.1")
+    implementation("io.github.kmatsushita1012:mapkit-core:0.1.1")
+    implementation("io.github.kmatsushita1012:mapkit-webview:0.1.1")
+    implementation("io.github.kmatsushita1012:mapkit-compose:0.1.1")
 }
 ```
 

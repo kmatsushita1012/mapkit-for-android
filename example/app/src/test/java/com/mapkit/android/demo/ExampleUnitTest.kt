@@ -1,4 +1,4 @@
-package com.mapkit.android.demo
+package com.studiomk.mapkit.demo
 
 import org.junit.Test
 

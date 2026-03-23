@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.mapkit.android"
+    namespace = "com.studiomk.mapkit"
     compileSdk = 36
 
     defaultConfig {
@@ -37,7 +37,7 @@ publishing {
     publications {
         register<MavenPublication>("release") {
             groupId = providers.gradleProperty("POM_GROUP_ID").get()
-            artifactId = "mapkit-for-android"
+            artifactId = "mapkit"
             version = providers.gradleProperty("VERSION_NAME").get()
 
             pom {

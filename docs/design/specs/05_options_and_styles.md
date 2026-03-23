@@ -5,7 +5,7 @@
 ### 1. 公開オプションモデル
 
 ```kotlin
-package com.mapkit.android.model
+package com.studiomk.mapkit.model
 
 enum class MKMapStyle {
     standard,
@@ -82,7 +82,7 @@ MAPKIT_JS_TOKEN=xxxxx.yyyyy.zzzzz
 ### 3. モジュール向け公開インターフェース
 
 ```kotlin
-package com.mapkit.android.config
+package com.studiomk.mapkit.config
 
 data class MKMapKitConfig(
     val tokenEnvKey: String = "MAPKIT_JS_TOKEN",
@@ -120,7 +120,7 @@ interface MKMapOptionsApplier {
 ### 3. 配布/公開内部要件
 
 ```kotlin
-package com.mapkit.android.publish
+package com.studiomk.mapkit.publish
 
 data class PublishCoordinates(
     val groupId: String,

@@ -5,7 +5,7 @@
 ### 1. Annotation モデル
 
 ```kotlin
-package com.mapkit.android.model
+package com.studiomk.mapkit.model
 
 data class MKAnnotation(
     val id: String,
@@ -42,7 +42,7 @@ sealed interface MKAnnotationStyle {
 ### 2. Overlay モデル
 
 ```kotlin
-package com.mapkit.android.model
+package com.studiomk.mapkit.model
 
 sealed interface MKOverlay {
     val id: String

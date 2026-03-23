@@ -1,4 +1,4 @@
-package com.mapkit.android.model
+package com.studiomk.mapkit.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

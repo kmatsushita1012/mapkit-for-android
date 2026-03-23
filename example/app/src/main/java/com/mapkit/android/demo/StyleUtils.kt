@@ -1,11 +1,11 @@
-package com.mapkit.android.demo
+package com.studiomk.mapkit.demo
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.Base64
-import com.mapkit.android.model.MKOverlayStyle
+import com.studiomk.mapkit.model.MKOverlayStyle
 import java.io.ByteArrayOutputStream
 import java.util.Locale
 

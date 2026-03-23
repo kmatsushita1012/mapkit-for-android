@@ -8,7 +8,7 @@
 ### 2. 利用者向け公開インターフェース
 
 ```kotlin
-package com.mapkit.android.api
+package com.studiomk.mapkit.api
 
 object MKMapKit {
     fun init(token: String)

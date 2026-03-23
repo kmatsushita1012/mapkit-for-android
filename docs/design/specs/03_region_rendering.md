@@ -5,7 +5,7 @@
 ### 1. 公開モデル(`MKXXX` 統一)
 
 ```kotlin
-package com.mapkit.android.model
+package com.studiomk.mapkit.model
 
 data class MKCoordinate(
     val latitude: Double,
@@ -69,7 +69,7 @@ data class MKCoordinateRegion(
 ### 1. 内部モデル
 
 ```kotlin
-package com.mapkit.android.internal.region
+package com.studiomk.mapkit.internal.region
 
 enum class InternalRegionOperation {
     system,
