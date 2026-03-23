@@ -67,6 +67,7 @@ import com.mapkit.android.model.MKPolylineOverlay
 import com.mapkit.android.model.MKUserLocationOptions
 import java.util.UUID
 import java.io.ByteArrayOutputStream
+import java.util.Locale
 
 private enum class DemoTab { Map, Settings }
 private enum class DrawMode { Browse, Annotation, Polyline, Polygon }
@@ -152,7 +153,8 @@ private fun DemoScreen() {
     var polylineGapLengthText by remember { mutableStateOf("6") }
     var polygonConfigExpanded by remember { mutableStateOf(true) }
     var polygonStrokeColorHex by remember { mutableStateOf("#22c55e") }
-    var polygonFillColorHex by remember { mutableStateOf("#22c55e33") }
+    var polygonFillColorHex by remember { mutableStateOf("#22c55e") }
+    var polygonFillAlphaText by remember { mutableStateOf("0.20") }
     var polygonStrokeWidthText by remember { mutableStateOf("3.0") }
     var polygonDashed by remember { mutableStateOf(false) }
     var polygonDashLengthText by remember { mutableStateOf("10") }
@@ -187,6 +189,7 @@ private fun DemoScreen() {
                     style = buildPolygonOverlayStyle(
                         strokeColorHex = polygonStrokeColorHex,
                         fillColorHex = polygonFillColorHex,
+                        fillAlphaText = polygonFillAlphaText,
                         widthText = polygonStrokeWidthText,
                         dashed = polygonDashed,
                         dashLengthText = polygonDashLengthText,
@@ -329,6 +332,7 @@ private fun DemoScreen() {
                                             style = buildPolygonOverlayStyle(
                                                 strokeColorHex = polygonStrokeColorHex,
                                                 fillColorHex = polygonFillColorHex,
+                                                fillAlphaText = polygonFillAlphaText,
                                                 widthText = polygonStrokeWidthText,
                                                 dashed = polygonDashed,
                                                 dashLengthText = polygonDashLengthText,
@@ -578,7 +582,13 @@ private fun DemoScreen() {
                         OutlinedTextField(
                             value = polygonFillColorHex,
                             onValueChange = { polygonFillColorHex = it },
-                            label = { Text("Polygon Fill Color (hex/rgba)") },
+                            label = { Text("Polygon Fill Color (hex)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = polygonFillAlphaText,
+                            onValueChange = { polygonFillAlphaText = it },
+                            label = { Text("Polygon Fill Alpha (0.0-1.0)") },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
@@ -888,6 +898,7 @@ private fun buildPolylineOverlayStyle(
 private fun buildPolygonOverlayStyle(
     strokeColorHex: String,
     fillColorHex: String,
+    fillAlphaText: String,
     widthText: String,
     dashed: Boolean,
     dashLengthText: String,
@@ -905,7 +916,10 @@ private fun buildPolygonOverlayStyle(
     return MKOverlayStyle(
         strokeColorHex = strokeColorHex.ifBlank { "#22c55e" },
         strokeWidth = width,
-        fillColorHex = fillColorHex.ifBlank { "#22c55e33" },
+        fillColorHex = buildRgbaColor(
+            colorHex = fillColorHex.ifBlank { "#22c55e" },
+            alphaText = fillAlphaText
+        ),
         lineDashPattern = dashPattern
     )
 }
@@ -913,4 +927,17 @@ private fun buildPolygonOverlayStyle(
 private fun parsePositiveDouble(text: String, fallback: Double): Double {
     val parsed = text.toDoubleOrNull() ?: return fallback
     return if (parsed > 0.0) parsed else fallback
+}
+
+private fun buildRgbaColor(colorHex: String, alphaText: String): String {
+    val rgb = try {
+        Color.parseColor(colorHex.trim())
+    } catch (_: Throwable) {
+        Color.parseColor("#22c55e")
+    }
+    val r = Color.red(rgb)
+    val g = Color.green(rgb)
+    val b = Color.blue(rgb)
+    val a = (alphaText.toDoubleOrNull() ?: 0.2).coerceIn(0.0, 1.0)
+    return "rgba($r, $g, $b, ${String.format(Locale.US, "%.3f", a)})"
 }
