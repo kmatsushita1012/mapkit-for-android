@@ -1,8 +1,13 @@
 package com.mapkit.android.demo
 
 import android.Manifest
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.util.Log
+import android.util.Base64
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -61,6 +66,7 @@ import com.mapkit.android.model.MKPolygonOverlay
 import com.mapkit.android.model.MKPolylineOverlay
 import com.mapkit.android.model.MKUserLocationOptions
 import java.util.UUID
+import java.io.ByteArrayOutputStream
 
 private enum class DemoTab { Map, Settings }
 private enum class DrawMode { Browse, Annotation, Polyline, Polygon }
@@ -135,6 +141,7 @@ private fun DemoScreen() {
     var annotationTintHex by remember { mutableStateOf("#0ea5e9") }
     var annotationGlyph by remember { mutableStateOf("A") }
     var markerGlyphMode by remember { mutableStateOf(MarkerGlyphMode.GlyphText) }
+    var customImageColorHex by remember { mutableStateOf("#f97316") }
     var baseConfigExpanded by remember { mutableStateOf(true) }
     var annotationConfigExpanded by remember { mutableStateOf(true) }
 
@@ -337,7 +344,12 @@ private fun DemoScreen() {
                                         )
 
                                         AnnotationVisualStyle.CustomImage -> MKAnnotationStyle.CustomImage(
-                                            source = MKImageSource.Url("file:///android_asset/demo/custom-annotation.svg"),
+                                            source = MKImageSource.Base64Png(
+                                                renderFilledCircleBase64Png(
+                                                    fillColorHex = customImageColorHex,
+                                                    sizePx = 48
+                                                )
+                                            ),
                                             widthDp = 40,
                                             heightDp = 40
                                         )
@@ -468,8 +480,14 @@ private fun DemoScreen() {
                                 )
                             }
                         } else {
+                            OutlinedTextField(
+                                value = customImageColorHex,
+                                onValueChange = { customImageColorHex = it },
+                                label = { Text("Custom Circle Color (hex)") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
                             Text(
-                                text = "Custom image: file:///android_asset/demo/custom-annotation.svg",
+                                text = "Custom image is generated in demo and passed as Base64 PNG.",
                                 style = MaterialTheme.typography.bodySmall
                             )
                         }
@@ -694,3 +712,37 @@ private fun MKMapEvent.toDisplayText(): String {
 }
 
 private fun Double.format6(): String = String.format("%.6f", this)
+
+private fun renderFilledCircleBase64Png(fillColorHex: String, sizePx: Int): String {
+    val safeSize = sizePx.coerceAtLeast(16)
+    val bmp = Bitmap.createBitmap(safeSize, safeSize, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bmp)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = parseHexColor(fillColorHex, Color.parseColor("#F97316"))
+    }
+    val cx = safeSize / 2f
+    val cy = safeSize / 2f
+    val radius = safeSize * 0.42f
+    canvas.drawCircle(cx, cy, radius, paint)
+
+    val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = (safeSize * 0.06f).coerceAtLeast(1f)
+        color = Color.WHITE
+    }
+    canvas.drawCircle(cx, cy, radius, stroke)
+
+    val out = ByteArrayOutputStream()
+    bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
+    val bytes = out.toByteArray()
+    return Base64.encodeToString(bytes, Base64.NO_WRAP)
+}
+
+private fun parseHexColor(hex: String, fallback: Int): Int {
+    return try {
+        Color.parseColor(hex.trim())
+    } catch (_: Throwable) {
+        fallback
+    }
+}
