@@ -46,9 +46,7 @@
   }
 
   function debugLog(message) {
-    try {
-      console.log("[MKBridgeJS] " + message);
-    } catch (_) {}
+    // no-op: library users should not receive bridge debug logs by default
   }
 
   function emitBridgeError(message) {
@@ -443,14 +441,14 @@
         const imageUrl = resolveImageSource(style.source);
         const h = Number(style.heightDp || 36);
         annotation = new window.mapkit.ImageAnnotation(coord, {
-          title: item.title || item.id,
+          title: item.title || undefined,
           subtitle: item.subtitle || undefined,
           url: { 1: imageUrl, 2: imageUrl, 3: imageUrl },
           anchorOffset: new DOMPoint(0, 0),
         });
       } else {
         const options = {
-          title: item.title || item.id,
+          title: item.title || undefined,
           subtitle: item.subtitle || undefined,
           color: style.tintHex || undefined,
           glyphText: style.glyphText || undefined,
@@ -466,7 +464,7 @@
       }
     } catch (_) {
       annotation = new window.mapkit.MarkerAnnotation(coord, {
-        title: item.title || item.id,
+        title: item.title || undefined,
         subtitle: item.subtitle || undefined,
       });
     }
