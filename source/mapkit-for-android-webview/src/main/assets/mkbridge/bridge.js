@@ -33,6 +33,8 @@
     overlaysById: {},
     annotationHashesById: {},
     overlayHashesById: {},
+    lastSelectedAnnotationId: null,
+    pendingDeferredDeselect: null,
     longPressTimer: null,
     longPressStart: null,
     longPressHandlersInstalled: false,
@@ -409,6 +411,7 @@
       try {
         if (event && event.annotation && event.annotation.data && event.annotation.data.id) {
           const id = String(event.annotation.data.id);
+          state.lastSelectedAnnotationId = id;
           debugLog("emit annotationSelected id=" + id);
           emit({ type: "annotationSelected", id: id });
           return;
@@ -423,6 +426,9 @@
       try {
         if (event && event.annotation && event.annotation.data && event.annotation.data.id) {
           const id = String(event.annotation.data.id);
+          if (state.lastSelectedAnnotationId === id) {
+            state.lastSelectedAnnotationId = null;
+          }
           debugLog("emit annotationDeselected id=" + id);
           emit({ type: "annotationDeselected", id: id });
         }
@@ -838,7 +844,18 @@
       if (!annotation) return;
       try {
         if ("selectedAnnotation" in state.map) {
-          state.map.selectedAnnotation = null;
+          const shouldDeferOneFrame = state.lastSelectedAnnotationId === String(id);
+          if (shouldDeferOneFrame && typeof requestAnimationFrame === "function") {
+            if (state.pendingDeferredDeselect != null && typeof cancelAnimationFrame === "function") {
+              cancelAnimationFrame(state.pendingDeferredDeselect);
+            }
+            state.pendingDeferredDeselect = requestAnimationFrame(function () {
+              state.pendingDeferredDeselect = null;
+              state.map.selectedAnnotation = null;
+            });
+          } else {
+            state.map.selectedAnnotation = null;
+          }
           debugLog("deselectAnnotationById: " + id);
         }
       } catch (_) {}

@@ -25,8 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,9 +50,6 @@ import com.studiomk.mapkit.model.MKPolygonOverlay
 import com.studiomk.mapkit.model.MKPolylineOverlay
 import com.studiomk.mapkit.model.MKUserLocationOptions
 import java.util.UUID
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -199,16 +194,8 @@ internal fun AppScreen() {
         overlays = committedOverlays + draftOverlay,
         options = options
     )
-    val latestMapState = rememberUpdatedState(mapState)
-    val coroutineScope = rememberCoroutineScope()
-    var pendingImmediateDeselectJob by remember { mutableStateOf<Job?>(null) }
     val requestImmediateDeselect: (MKAnnotation) -> Unit = { annotation ->
-        pendingImmediateDeselectJob?.cancel()
-        val annotationId = annotation.id
-        pendingImmediateDeselectJob = coroutineScope.launch {
-            delay(100L)
-            latestMapState.value.deselectAnnotation(annotationId, animated = false)
-        }
+        mapState.deselectAnnotation(annotation.id, animated = false)
     }
     val requestExplicitDeselect: () -> Unit = { }
 
