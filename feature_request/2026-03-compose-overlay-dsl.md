@@ -11,7 +11,7 @@
 - 禁止対象は「利用者カスタム拡張を目的とした Annotation/Overlay の基盤 class/interface」。
 - Overlay は必要なら共通 interface を保持してよい(禁止しない)。
 - `AnnotationSelected` / `AnnotationDeselected` は 1 フレーム遅延で通知する。
-- region は「読み取り(state) + 命令(controller)の併用」を採用する。
+- region は `MKMapView(region=...)` の state 入力に一本化する(controller からは変更しない)。
 
 ---
 
@@ -42,19 +42,13 @@ fun MKMapView(
 interface MKMapController {
     fun selectAnnotation(id: String, animated: Boolean = true)
     fun deselectAnnotation(animated: Boolean = false)
-
-    fun setRegion(region: MKCoordinateRegion, animated: Boolean = true)
-    fun fitToCoordinates(
-        coordinates: List<MKCoordinate>,
-        edgePadding: MKEdgePadding = MKEdgePadding(0.0, 0.0, 0.0, 0.0),
-        animated: Boolean = true
-    )
 }
 ```
 
 ポイント:
 - `deselectAnnotation(id)` ではなく `deselectAnnotation()` とする。
   理由: MapKit JS の選択実体は単一(`selectedAnnotation`)であり、選択中 1 件を解除する命令に揃える。
+- region 変更系コマンドは持たない。`region` は利用側 state 更新で反映する。
 
 ### 3. Annotation API (state を持たない)
 
@@ -93,14 +87,12 @@ MKMapView(
         id = "shop-1",
         coordinate = shopCoord,
         onSelected = {
-            // 必要ならそのまま維持
+            // 選択させたくない画面なら即解除命令
+            controller.deselectAnnotation(animated = false)
+            // または必要ならそのまま維持してもよい
         },
         onDeselected = {
             // UI更新のみ
-        },
-        onSelected = {
-            // 選択させたくない画面なら即解除命令
-            controller.deselectAnnotation(animated = false)
         }
     )
 }
@@ -186,15 +178,23 @@ internal class MKAnnotationCallbackRegistry {
 
 ### 2.1 Region 方針(検討結果)
 
-region は「state だけ」でも「命令だけ」でもなく、次の併用を採用する。
+region は state 一本化とする。
 
 1. 読み取り: `onRegionDidChange` で利用側 state に取り込む
-2. 書き込み(明示操作): `controller.setRegion(...)`, `controller.fitToCoordinates(...)`
+2. 書き込み: 利用側が `region` を更新して `MKMapView(region=...)` に再入力する
 
 採用理由:
-- ジェスチャー由来の region 変化を UI 側で観測できる
-- ボタン操作や外部イベントからのジャンプを命令的に実行できる
-- Compose でありがちな「再代入競合」を減らせる
+- 流入経路が 1 本になり、競合とデバッグコストを下げられる
+- `fitToCoordinates` も利用側で `MKCoordinateRegion.fromCoordinates(...)` を算出して代替できる
+- Compose の単一データフローに一致する
+
+### 2.2 今後の線引き(実装方針)
+
+- 連続値で表現できるもの(例: region, zoom range, camera)は state として扱う
+- 状態で持つと不自然な離散操作/一時操作(例: select, deselect, flash, trigger)は callback + controller 命令で扱う
+
+`isSelected` を state から外した理由は、値そのものより「瞬間的な選択操作」の意味が強く、
+declarative state に乗せると利用側に不要な同期責務が増えるため。
 
 ### 3. 1フレーム遅延の必須仕様
 
@@ -256,7 +256,7 @@ internal class MKMapControllerImpl(
 - callback で受けた事象に対して controller 命令で操作できる。
 - `AnnotationSelected` / `AnnotationDeselected` が 1 フレーム遅延で発火する。
 - `Annotation.onTap` が存在せず、選択契機は `onSelected` に一本化されている。
-- region が `onRegionDidChange`(読み取り) + controller(書き込み) で扱える。
+- region が `onRegionDidChange`(読み取り) + `region` 引数(state 書き込み)で一貫して扱える。
 
 ---
 
@@ -268,4 +268,5 @@ internal class MKMapControllerImpl(
 4. JS `select/deselect` の 1 フレーム遅延実装
 5. `isSelected` 削除
 6. Annotation カスタム拡張用の基盤 type を削除
-7. example を controller 命令型へ更新
+7. region 更新を state 一本化で example へ反映
+8. example を controller 命令型へ更新
