@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -90,6 +91,7 @@ internal fun AppScreen() {
 
     var tapAction by remember { mutableStateOf(DrawMode.None) }
     var longPressAction by remember { mutableStateOf(DrawMode.Annotation) }
+    var immediateDeselectOnAnnotationTap by remember { mutableStateOf(true) }
     var annotationVisualStyle by remember { mutableStateOf(AnnotationVisualStyle.Marker) }
     var annotationTitle by remember { mutableStateOf("Pinned") }
     var annotationSubtitle by remember { mutableStateOf("") }
@@ -192,6 +194,8 @@ internal fun AppScreen() {
         overlays = committedOverlays + draftOverlay,
         options = options
     )
+    val requestImmediateDeselect: (MKAnnotation) -> Unit = { _ -> }
+    val requestExplicitDeselect: () -> Unit = { }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -243,6 +247,9 @@ internal fun AppScreen() {
                         values = DrawMode.entries,
                         onSelected = { tapAction = it }
                     )
+                    Button(onClick = requestExplicitDeselect) {
+                        Text("Deselect Selected Annotation")
+                    }
                     if (activeDrawMode == DrawMode.Polyline || activeDrawMode == DrawMode.Polygon || activeDrawMode == DrawMode.Circle) {
                         DraftGeometryActionRow(
                             drawMode = activeDrawMode,
@@ -380,6 +387,11 @@ internal fun AppScreen() {
                                     region = event.region
                                 }
                             }
+                            is MKMapEvent.AnnotationTapped -> {
+                                if (immediateDeselectOnAnnotationTap) {
+                                    requestImmediateDeselect(event.annotation)
+                                }
+                            }
 
                             is MKMapEvent.LongPress -> {
                                 addGeometryPoint(longPressAction, event.coordinate)
@@ -491,6 +503,11 @@ internal fun AppScreen() {
                             value = longPressAction,
                             values = DrawMode.entries,
                             onSelected = { longPressAction = it }
+                        )
+                        ToggleRow(
+                            label = "Immediate Deselect on Annotation Tap",
+                            checked = immediateDeselectOnAnnotationTap,
+                            onCheckedChange = { immediateDeselectOnAnnotationTap = it }
                         )
 
                         ToggleRow(
