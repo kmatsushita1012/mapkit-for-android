@@ -841,6 +841,7 @@ private fun MKMapEvent.toDisplayText(): String {
 
         is MKMapEvent.LongPress -> "LongPress(${coordinate.latitude.format6()},${coordinate.longitude.format6()})"
         is MKMapEvent.AnnotationTapped -> "AnnotationTapped(id=$id)"
+        is MKMapEvent.AnnotationDeselected -> "AnnotationDeselected(id=$id)"
         is MKMapEvent.OverlayTapped -> "OverlayTapped(id=$id)"
         is MKMapEvent.UserLocationUpdated -> {
             "UserLocationUpdated(${coordinate.latitude.format6()},${coordinate.longitude.format6()})"

@@ -41,6 +41,7 @@ fun MKMapView(
         factory = { context ->
             MKBridgeWebView(context).also { webView ->
                 webView.setEventListener { event -> latestOnEvent.value(event) }
+                state.bindCommandDispatcher { command -> webView.applyCommand(command) }
                 debugController?.apply {
                     onSimulateAnnotationTap = { webView.simulateAnnotationTap() }
                     onSimulateOverlayTap = { webView.simulateOverlayTap() }
@@ -57,6 +58,7 @@ fun MKMapView(
         },
         update = { webView ->
             webView.setEventListener { event -> latestOnEvent.value(event) }
+            state.bindCommandDispatcher { command -> webView.applyCommand(command) }
             debugController?.apply {
                 onSimulateAnnotationTap = { webView.simulateAnnotationTap() }
                 onSimulateOverlayTap = { webView.simulateOverlayTap() }

@@ -81,8 +81,18 @@ open class MKAnnotation(
     open val coordinate: MKCoordinate,
     open val title: String? = null,
     open val subtitle: String? = null,
-    open val isVisible: Boolean = true
+    open val isVisible: Boolean = true,
+    isSelected: Boolean = false
 ) {
+    private var selectedState: Boolean = isSelected
+
+    open val isSelected: Boolean
+        get() = selectedState
+
+    internal fun setSelectedFromLibrary(value: Boolean) {
+        selectedState = value
+    }
+
     open fun renderingStyle(): MKAnnotationStyle = MKAnnotationStyle.Marker()
 
     protected open fun extraEquals(other: MKAnnotation): Boolean = true
@@ -120,6 +130,7 @@ class MKMarkerAnnotation(
     override val title: String? = null,
     override val subtitle: String? = null,
     override val isVisible: Boolean = true,
+    isSelected: Boolean = false,
     val tintHex: String = "#FF3B30",
     val glyphText: String? = null,
     val glyphImageSource: MKImageSource? = MKImageSource.ResourceName("pin")
@@ -128,7 +139,8 @@ class MKMarkerAnnotation(
     coordinate = coordinate,
     title = title,
     subtitle = subtitle,
-    isVisible = isVisible
+    isVisible = isVisible,
+    isSelected = isSelected
 ) {
     override fun renderingStyle(): MKAnnotationStyle = MKAnnotationStyle.Marker(
         tintHex = tintHex,
@@ -264,7 +276,84 @@ data class MKMapState(
     val annotations: List<MKAnnotation> = emptyList(),
     val overlays: List<MKOverlay> = emptyList(),
     val options: MKMapOptions = MKMapOptions()
-)
+) {
+    @Transient
+    private val pendingCommands = ArrayDeque<MKMapCommand>()
+
+    @Transient
+    private var commandDispatcher: ((MKMapCommand) -> Unit)? = null
+
+    @Synchronized
+    fun selectAnnotation(annotation: MKAnnotation, animated: Boolean = true) {
+        selectAnnotation(annotation.id, animated = animated)
+    }
+
+    @Synchronized
+    fun selectAnnotation(annotationId: String, animated: Boolean = true) {
+        if (annotations.none { it.id == annotationId }) return
+        enqueueOrDispatch(MKMapCommand.SelectAnnotation(annotationId, animated))
+    }
+
+    @Synchronized
+    fun deselectAnnotation(annotation: MKAnnotation, animated: Boolean = false) {
+        deselectAnnotation(annotation.id, animated = animated)
+    }
+
+    @Synchronized
+    fun deselectAnnotation(annotationId: String, animated: Boolean = false) {
+        if (annotations.none { it.id == annotationId }) return
+        enqueueOrDispatch(MKMapCommand.DeselectAnnotation(annotationId, animated))
+    }
+
+    @Synchronized
+    fun bindCommandDispatcher(dispatcher: (MKMapCommand) -> Unit) {
+        commandDispatcher = dispatcher
+        while (pendingCommands.isNotEmpty()) {
+            dispatcher(pendingCommands.removeFirst())
+        }
+    }
+
+    @Synchronized
+    fun clearCommandDispatcher() {
+        commandDispatcher = null
+    }
+
+    @Synchronized
+    fun syncSelectedFromMap(annotationId: String, isSelected: Boolean): MKAnnotation? {
+        var target: MKAnnotation? = null
+        annotations.forEach { annotation ->
+            val nextSelected = if (isSelected) {
+                annotation.id == annotationId
+            } else {
+                if (annotation.id != annotationId) {
+                    annotation.isSelected
+                } else {
+                    false
+                }
+            }
+            annotation.setSelectedFromLibrary(nextSelected)
+            if (annotation.id == annotationId) {
+                target = annotation
+            }
+        }
+        return target
+    }
+
+    @Synchronized
+    private fun enqueueOrDispatch(command: MKMapCommand) {
+        val dispatcher = commandDispatcher
+        if (dispatcher != null) {
+            dispatcher(command)
+        } else {
+            pendingCommands.addLast(command)
+        }
+    }
+}
+
+sealed interface MKMapCommand {
+    data class SelectAnnotation(val annotationId: String, val animated: Boolean = true) : MKMapCommand
+    data class DeselectAnnotation(val annotationId: String, val animated: Boolean = false) : MKMapCommand
+}
 
 sealed interface MKMapErrorCause {
     data object NotInitialized : MKMapErrorCause
@@ -279,6 +368,9 @@ sealed interface MKMapEvent {
     data class MapTapped(val coordinate: MKCoordinate) : MKMapEvent
     data class LongPress(val coordinate: MKCoordinate) : MKMapEvent
     data class AnnotationTapped(val annotation: MKAnnotation) : MKMapEvent {
+        val id: String get() = annotation.id
+    }
+    data class AnnotationDeselected(val annotation: MKAnnotation) : MKMapEvent {
         val id: String get() = annotation.id
     }
     data class OverlayTapped(val overlay: MKOverlay) : MKMapEvent {

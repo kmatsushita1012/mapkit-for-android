@@ -401,13 +401,23 @@
     state.map.addEventListener("select", function (event) {
       try {
         if (event && event.annotation && event.annotation.data && event.annotation.data.id) {
-          debugLog("emit annotationTapped id=" + String(event.annotation.data.id));
-          emit({ type: "annotationTapped", id: String(event.annotation.data.id) });
+          const id = String(event.annotation.data.id);
+          debugLog("emit annotationSelected id=" + id);
+          emit({ type: "annotationSelected", id: id });
           return;
         }
         if (event && event.overlay && event.overlay.data && event.overlay.data.id) {
           debugLog("emit overlayTapped id=" + String(event.overlay.data.id));
           emit({ type: "overlayTapped", id: String(event.overlay.data.id) });
+        }
+      } catch (_) {}
+    });
+    state.map.addEventListener("deselect", function (event) {
+      try {
+        if (event && event.annotation && event.annotation.data && event.annotation.data.id) {
+          const id = String(event.annotation.data.id);
+          debugLog("emit annotationDeselected id=" + id);
+          emit({ type: "annotationDeselected", id: id });
         }
       } catch (_) {}
     });
@@ -470,12 +480,6 @@
     }
     if (!annotation) return null;
     annotation.data = { id: item.id };
-    if (typeof annotation.addEventListener === "function") {
-      annotation.addEventListener("select", function () {
-        debugLog("emit annotationTapped(annotation.select) id=" + item.id);
-        emit({ type: "annotationTapped", id: item.id });
-      });
-    }
     return annotation;
   }
 
@@ -590,12 +594,6 @@
       if (!overlay) return;
 
       overlay.data = { id: item.id };
-      if (typeof overlay.addEventListener === "function") {
-        overlay.addEventListener("select", function () {
-          debugLog("emit overlayTapped(overlay.select) id=" + item.id);
-          emit({ type: "overlayTapped", id: item.id });
-        });
-      }
       state.map.addOverlay(overlay);
       state.overlaysById[id] = overlay;
       state.overlayHashesById[id] = nextHash;
@@ -815,6 +813,28 @@
       }
     },
 
+    selectAnnotationById: function (id, animated) {
+      if (!state.map || !id) return;
+      const annotation = state.annotationsById[String(id)];
+      if (!annotation) return;
+      try {
+        if ("selectedAnnotation" in state.map) {
+          state.map.selectedAnnotation = annotation;
+        }
+      } catch (_) {}
+    },
+
+    deselectAnnotationById: function (id, animated) {
+      if (!state.map || !id) return;
+      const annotation = state.annotationsById[String(id)];
+      if (!annotation) return;
+      try {
+        if ("selectedAnnotation" in state.map) {
+          state.map.selectedAnnotation = null;
+        }
+      } catch (_) {}
+    },
+
     simulatePan: function () {
       if (!state.mapReady) return;
       state.region.centerLat = state.region.centerLat + 0.001;
@@ -826,7 +846,7 @@
 
     simulateAnnotationTap: function () {
       const id = (state.annotations[0] && state.annotations[0].id) || "sample-annotation";
-      emit({ type: "annotationTapped", id: id });
+      emit({ type: "annotationSelected", id: id });
     },
 
     simulateOverlayTap: function () {

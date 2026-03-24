@@ -19,6 +19,7 @@ import com.studiomk.mapkit.model.MKCoordinate
 import com.studiomk.mapkit.model.MKCoordinateRegion
 import com.studiomk.mapkit.model.MKCircleOverlay
 import com.studiomk.mapkit.model.MKMapErrorCause
+import com.studiomk.mapkit.model.MKMapCommand
 import com.studiomk.mapkit.model.MKMapEvent
 import com.studiomk.mapkit.model.MKMapState
 import com.studiomk.mapkit.model.MKAnnotationStyle
@@ -48,6 +49,7 @@ class MKBridgeWebView @JvmOverloads constructor(
     private var pendingToken: String? = null
     private var lastAppliedPayload: String? = null
     private var pendingState: MKMapState? = null
+    private val pendingCommands: MutableList<MKMapCommand> = mutableListOf()
     private var latestAnnotationsById: Map<String, MKAnnotation> = emptyMap()
     private var latestOverlaysById: Map<String, MKOverlay> = emptyMap()
 
@@ -111,6 +113,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                 isPageReady = true
                 sendInitIfPossible()
                 flushPendingState()
+                flushPendingCommands()
             }
         }
         addJavascriptInterface(androidBridge, "AndroidMKBridge")
@@ -127,11 +130,41 @@ class MKBridgeWebView @JvmOverloads constructor(
     }
 
     fun applyState(state: MKMapState) {
+        pendingState?.clearCommandDispatcher()
+        state.bindCommandDispatcher { command ->
+            post { applyCommand(command) }
+        }
         latestAnnotationsById = state.annotations.associateBy { it.id }
         latestOverlaysById = state.overlays.associateBy { it.id }
         pendingState = state
         if (!isPageReady || !isJsInitSent) return
         flushPendingState()
+        flushPendingCommands()
+    }
+
+    fun applyCommand(command: MKMapCommand) {
+        if (!isPageReady || !isJsInitSent) {
+            pendingCommands += command
+            return
+        }
+        when (command) {
+            is MKMapCommand.SelectAnnotation -> selectAnnotation(command.annotationId, command.animated)
+            is MKMapCommand.DeselectAnnotation -> deselectAnnotation(command.annotationId, command.animated)
+        }
+    }
+
+    fun selectAnnotation(annotationId: String, animated: Boolean = true) {
+        val escapedId = JSONObject.quote(annotationId)
+        evaluateJavascriptSafe(
+            "window.MKBridge && window.MKBridge.selectAnnotationById && window.MKBridge.selectAnnotationById($escapedId, $animated);"
+        )
+    }
+
+    fun deselectAnnotation(annotationId: String, animated: Boolean = false) {
+        val escapedId = JSONObject.quote(annotationId)
+        evaluateJavascriptSafe(
+            "window.MKBridge && window.MKBridge.deselectAnnotationById && window.MKBridge.deselectAnnotationById($escapedId, $animated);"
+        )
     }
 
     private fun flushPendingState() {
@@ -150,6 +183,13 @@ class MKBridgeWebView @JvmOverloads constructor(
         val escaped = JSONObject.quote(token)
         evaluateJavascriptSafe("window.MKBridge && window.MKBridge.init($escaped);")
         isJsInitSent = true
+    }
+
+    private fun flushPendingCommands() {
+        if (!isPageReady || !isJsInitSent || pendingCommands.isEmpty()) return
+        val commands = pendingCommands.toList()
+        pendingCommands.clear()
+        commands.forEach { applyCommand(it) }
     }
 
     private fun evaluateJavascriptSafe(script: String) {
@@ -197,6 +237,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                         .put("title", annotation.title)
                         .put("subtitle", annotation.subtitle)
                         .put("isVisible", annotation.isVisible)
+                        .put("isSelected", annotation.isSelected)
                         .put("style", serializeAnnotationStyle(annotation.renderingStyle()))
                 )
             }
@@ -323,15 +364,28 @@ class MKBridgeWebView @JvmOverloads constructor(
                 )
             )
 
-            "annotationTapped" -> {
+            "annotationSelected" -> {
                 val id = json.getString("id")
-                val annotation = latestAnnotationsById[id]
+                val annotation = syncAnnotationSelection(id = id, isSelected = true)
                 if (annotation != null) {
                     MKMapEvent.AnnotationTapped(annotation)
                 } else {
                     MKMapEvent.MapError(
                         MKMapErrorCause.BridgeFailure(
-                            "annotationTapped id=$id was not found in latest state"
+                            "annotationSelected id=$id was not found in latest state"
+                        )
+                    )
+                }
+            }
+            "annotationDeselected" -> {
+                val id = json.getString("id")
+                val annotation = syncAnnotationSelection(id = id, isSelected = false)
+                if (annotation != null) {
+                    MKMapEvent.AnnotationDeselected(annotation)
+                } else {
+                    MKMapEvent.MapError(
+                        MKMapErrorCause.BridgeFailure(
+                            "annotationDeselected id=$id was not found in latest state"
                         )
                     )
                 }
@@ -366,6 +420,19 @@ class MKBridgeWebView @JvmOverloads constructor(
                 MKMapErrorCause.BridgeFailure("Unknown event type: ${json.optString("type")}")
             )
         }
+    }
+
+    private fun syncAnnotationSelection(id: String, isSelected: Boolean): MKAnnotation? {
+        val state = pendingState
+        val selected = if (state != null) {
+            state.syncSelectedFromMap(id, isSelected)
+        } else {
+            latestAnnotationsById[id]
+        }
+        if (state != null) {
+            latestAnnotationsById = state.annotations.associateBy { it.id }
+        }
+        return selected
     }
 
     private fun serializeAnnotationStyle(style: MKAnnotationStyle): JSONObject {
