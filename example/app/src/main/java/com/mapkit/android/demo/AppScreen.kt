@@ -88,6 +88,7 @@ internal fun AppScreen() {
     var activeDrawMode by remember { mutableStateOf(DrawMode.None) }
     var draftPoints by remember { mutableStateOf<List<MKCoordinate>>(emptyList()) }
     var lastEventText by remember { mutableStateOf("No events yet") }
+    var selectedAnnotationId by remember { mutableStateOf<String?>(null) }
 
     var tapAction by remember { mutableStateOf(DrawMode.None) }
     var longPressAction by remember { mutableStateOf(DrawMode.Annotation) }
@@ -197,7 +198,11 @@ internal fun AppScreen() {
     val requestImmediateDeselect: (MKAnnotation) -> Unit = { annotation ->
         mapState.deselectAnnotation(annotation.id, animated = false)
     }
-    val requestExplicitDeselect: () -> Unit = { }
+    val requestExplicitDeselect: () -> Unit = {
+        selectedAnnotationId?.let { annotationId ->
+            mapState.deselectAnnotation(annotationId, animated = false)
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -249,7 +254,10 @@ internal fun AppScreen() {
                         values = DrawMode.entries,
                         onSelected = { tapAction = it }
                     )
-                    Button(onClick = requestExplicitDeselect) {
+                    Button(
+                        onClick = requestExplicitDeselect,
+                        enabled = selectedAnnotationId != null
+                    ) {
                         Text("Deselect Selected Annotation")
                     }
                     if (activeDrawMode == DrawMode.Polyline || activeDrawMode == DrawMode.Polygon || activeDrawMode == DrawMode.Circle) {
@@ -390,8 +398,14 @@ internal fun AppScreen() {
                                 }
                             }
                             is MKMapEvent.AnnotationTapped -> {
+                                selectedAnnotationId = event.annotation.id
                                 if (immediateDeselectOnAnnotationTap) {
                                     requestImmediateDeselect(event.annotation)
+                                }
+                            }
+                            is MKMapEvent.AnnotationDeselected -> {
+                                if (selectedAnnotationId == event.annotation.id) {
+                                    selectedAnnotationId = null
                                 }
                             }
 
