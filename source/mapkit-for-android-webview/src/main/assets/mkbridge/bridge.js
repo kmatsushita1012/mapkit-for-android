@@ -355,8 +355,15 @@
         if (event && event.annotation && event.annotation.data && event.annotation.data.id) {
           const id = String(event.annotation.data.id);
           state.lastSelectedAnnotationId = id;
-          debugLog("emit annotationSelected id=" + id);
-          emit({ type: "annotationSelected", id: id });
+          emit({ type: "annotationTapped", id: id });
+          if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(function () {
+              debugLog("emit annotationSelected id=" + id);
+              emit({ type: "annotationSelected", id: id });
+            });
+          } else {
+            emit({ type: "annotationSelected", id: id });
+          }
           return;
         }
         if (event && event.overlay && event.overlay.data && event.overlay.data.id) {
@@ -372,8 +379,14 @@
           if (state.lastSelectedAnnotationId === id) {
             state.lastSelectedAnnotationId = null;
           }
-          debugLog("emit annotationDeselected id=" + id);
-          emit({ type: "annotationDeselected", id: id });
+          if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(function () {
+              debugLog("emit annotationDeselected id=" + id);
+              emit({ type: "annotationDeselected", id: id });
+            });
+          } else {
+            emit({ type: "annotationDeselected", id: id });
+          }
         }
       } catch (_) {}
     });
@@ -436,6 +449,36 @@
     }
     if (!annotation) return null;
     annotation.data = { id: item.id };
+    try {
+      if (typeof item.isDraggable !== "undefined") {
+        annotation.draggable = !!item.isDraggable;
+      }
+    } catch (_) {}
+    try {
+      annotation.addEventListener("drag-start", function () {
+        emit({ type: "annotationDragStart", id: String(item.id) });
+      });
+      annotation.addEventListener("dragging", function (event) {
+        const c = event && event.target && event.target.coordinate;
+        if (!c) return;
+        emit({
+          type: "annotationDragging",
+          id: String(item.id),
+          lat: c.latitude,
+          lng: c.longitude,
+        });
+      });
+      annotation.addEventListener("drag-end", function (event) {
+        const c = event && event.target && event.target.coordinate;
+        if (!c) return;
+        emit({
+          type: "annotationDragEnd",
+          id: String(item.id),
+          lat: c.latitude,
+          lng: c.longitude,
+        });
+      });
+    } catch (_) {}
     return annotation;
   }
 
@@ -781,13 +824,13 @@
       } catch (_) {}
     },
 
-    deselectAnnotationById: function (id, animated) {
-      if (!state.map || !id) return;
-      const annotation = state.annotationsById[String(id)];
-      if (!annotation) return;
+    deselectAnnotation: function (animated) {
+      if (!state.map) return;
       try {
         if ("selectedAnnotation" in state.map) {
-          const shouldDeferOneFrame = state.lastSelectedAnnotationId === String(id);
+          const selected = state.map.selectedAnnotation;
+          const selectedId = selected && selected.data && selected.data.id ? String(selected.data.id) : null;
+          const shouldDeferOneFrame = selectedId != null && state.lastSelectedAnnotationId === selectedId;
           if (shouldDeferOneFrame && typeof requestAnimationFrame === "function") {
             if (state.pendingDeferredDeselect != null && typeof cancelAnimationFrame === "function") {
               cancelAnimationFrame(state.pendingDeferredDeselect);
@@ -799,7 +842,7 @@
           } else {
             state.map.selectedAnnotation = null;
           }
-          debugLog("deselectAnnotationById: " + id);
+          debugLog("deselectAnnotation");
         }
       } catch (_) {}
     },

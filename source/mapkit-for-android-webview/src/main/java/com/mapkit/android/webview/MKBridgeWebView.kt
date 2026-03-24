@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.os.Binder.flushPendingCommands
 import android.util.AttributeSet
 import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
@@ -15,17 +14,15 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.webkit.WebViewAssetLoader
-import com.studiomk.mapkit.model.MKAnnotation
 import com.studiomk.mapkit.model.MKCoordinate
 import com.studiomk.mapkit.model.MKCoordinateRegion
 import com.studiomk.mapkit.model.MKCircleOverlay
 import com.studiomk.mapkit.model.MKMapErrorCause
 import com.studiomk.mapkit.model.MKMapCommand
 import com.studiomk.mapkit.model.MKMapEvent
-import com.studiomk.mapkit.model.MKMapState
+import com.studiomk.mapkit.model.MKMapRenderState
 import com.studiomk.mapkit.model.MKAnnotationStyle
 import com.studiomk.mapkit.model.MKImageSource
-import com.studiomk.mapkit.model.MKOverlay
 import com.studiomk.mapkit.model.MKPoiFilter
 import com.studiomk.mapkit.model.MKPolygonOverlay
 import com.studiomk.mapkit.model.MKPolylineOverlay
@@ -49,10 +46,8 @@ class MKBridgeWebView @JvmOverloads constructor(
     private var isJsInitSent = false
     private var pendingToken: String? = null
     private var lastAppliedPayload: String? = null
-    private var pendingState: MKMapState? = null
+    private var pendingState: MKMapRenderState? = null
     private val pendingCommands: MutableList<MKMapCommand> = mutableListOf()
-    private var latestAnnotationsById: Map<String, MKAnnotation> = emptyMap()
-    private var latestOverlaysById: Map<String, MKOverlay> = emptyMap()
 
     private val androidBridge = object {
         @JavascriptInterface
@@ -130,13 +125,7 @@ class MKBridgeWebView @JvmOverloads constructor(
         sendInitIfPossible()
     }
 
-    fun applyState(state: MKMapState) {
-        pendingState?.clearCommandDispatcher()
-        state.bindCommandDispatcher { command ->
-            post { applyCommand(command) }
-        }
-        latestAnnotationsById = state.annotations.associateBy { it.id }
-        latestOverlaysById = state.overlays.associateBy { it.id }
+    fun applyState(state: MKMapRenderState) {
         pendingState = state
         if (!isPageReady || !isJsInitSent) return
         flushPendingState()
@@ -153,7 +142,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                 selectAnnotation(command.annotationId, command.animated)
             }
             is MKMapCommand.DeselectAnnotation -> {
-                deselectAnnotation(command.annotationId, command.animated)
+                deselectAnnotation(command.animated)
             }
         }
     }
@@ -165,10 +154,9 @@ class MKBridgeWebView @JvmOverloads constructor(
         )
     }
 
-    fun deselectAnnotation(annotationId: String, animated: Boolean = false) {
-        val escapedId = JSONObject.quote(annotationId)
+    fun deselectAnnotation(animated: Boolean = false) {
         evaluateJavascriptSafe(
-            "window.MKBridge && window.MKBridge.deselectAnnotationById && window.MKBridge.deselectAnnotationById($escapedId, $animated);"
+            "window.MKBridge && window.MKBridge.deselectAnnotation && window.MKBridge.deselectAnnotation($animated);"
         )
     }
 
@@ -225,7 +213,7 @@ class MKBridgeWebView @JvmOverloads constructor(
         return fine || coarse
     }
 
-    private fun serializeState(state: MKMapState): String {
+    private fun serializeState(state: MKMapRenderState): String {
         val regionJson = JSONObject()
             .put("centerLat", state.region.center.latitude)
             .put("centerLng", state.region.center.longitude)
@@ -242,7 +230,8 @@ class MKBridgeWebView @JvmOverloads constructor(
                         .put("title", annotation.title)
                         .put("subtitle", annotation.subtitle)
                         .put("isVisible", annotation.isVisible)
-                        .put("style", serializeAnnotationStyle(annotation.renderingStyle()))
+                        .put("isDraggable", annotation.isDraggable)
+                        .put("style", serializeAnnotationStyle(annotation.style))
                 )
             }
         }
@@ -377,45 +366,25 @@ class MKBridgeWebView @JvmOverloads constructor(
                 )
             )
 
-            "annotationSelected" -> {
-                val id = json.getString("id")
-                val annotation = syncAnnotationSelection(id = id, isSelected = true)
-                if (annotation != null) {
-                    MKMapEvent.AnnotationSelected(annotation)
-                } else {
-                    MKMapEvent.MapError(
-                        MKMapErrorCause.BridgeFailure(
-                            "annotationSelected id=$id was not found in latest state"
-                        )
-                    )
-                }
-            }
-            "annotationDeselected" -> {
-                val id = json.getString("id")
-                val annotation = syncAnnotationSelection(id = id, isSelected = false)
-                if (annotation != null) {
-                    MKMapEvent.AnnotationDeselected(annotation)
-                } else {
-                    MKMapEvent.MapError(
-                        MKMapErrorCause.BridgeFailure(
-                            "annotationDeselected id=$id was not found in latest state"
-                        )
-                    )
-                }
-            }
-            "overlayTapped" -> {
-                val id = json.getString("id")
-                val overlay = latestOverlaysById[id]
-                if (overlay != null) {
-                    MKMapEvent.OverlayTapped(overlay)
-                } else {
-                    MKMapEvent.MapError(
-                        MKMapErrorCause.BridgeFailure(
-                            "overlayTapped id=$id was not found in latest state"
-                        )
-                    )
-                }
-            }
+            "annotationTapped" -> MKMapEvent.AnnotationTapped(id = json.getString("id"))
+            "annotationSelected" -> MKMapEvent.AnnotationSelected(id = json.getString("id"))
+            "annotationDeselected" -> MKMapEvent.AnnotationDeselected(id = json.getString("id"))
+            "annotationDragStart" -> MKMapEvent.AnnotationDragStart(id = json.getString("id"))
+            "annotationDragging" -> MKMapEvent.AnnotationDragging(
+                id = json.getString("id"),
+                coordinate = MKCoordinate(
+                    latitude = json.getDouble("lat"),
+                    longitude = json.getDouble("lng")
+                )
+            )
+            "annotationDragEnd" -> MKMapEvent.AnnotationDragEnd(
+                id = json.getString("id"),
+                coordinate = MKCoordinate(
+                    latitude = json.getDouble("lat"),
+                    longitude = json.getDouble("lng")
+                )
+            )
+            "overlayTapped" -> MKMapEvent.OverlayTapped(id = json.getString("id"))
             "bridgeError" -> MKMapEvent.MapError(
                 MKMapErrorCause.BridgeFailure(json.optString("message", "bridge error"))
             )
@@ -433,19 +402,6 @@ class MKBridgeWebView @JvmOverloads constructor(
                 MKMapErrorCause.BridgeFailure("Unknown event type: ${json.optString("type")}")
             )
         }
-    }
-
-    private fun syncAnnotationSelection(id: String, isSelected: Boolean): MKAnnotation? {
-        val state = pendingState
-        val selected = if (state != null) {
-            state.syncSelectedFromMap(id, isSelected)
-        } else {
-            latestAnnotationsById[id]
-        }
-        if (state != null) {
-            latestAnnotationsById = state.annotations.associateBy { it.id }
-        }
-        return selected
     }
 
     private fun serializeAnnotationStyle(style: MKAnnotationStyle): JSONObject {

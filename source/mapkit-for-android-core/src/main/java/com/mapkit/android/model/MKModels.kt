@@ -67,6 +67,7 @@ sealed interface MKAnnotationStyle {
         val glyphText: String? = null,
         val glyphImageSource: MKImageSource? = MKImageSource.ResourceName("pin")
     ) : MKAnnotationStyle
+
     data class Image(
         val source: MKImageSource,
         val widthDp: Int,
@@ -76,91 +77,15 @@ sealed interface MKAnnotationStyle {
     ) : MKAnnotationStyle
 }
 
-open class MKAnnotation(
-    open val id: String,
-    open val coordinate: MKCoordinate,
-    open val title: String? = null,
-    open val subtitle: String? = null,
-    open val isVisible: Boolean = true,
-    isSelected: Boolean = false
-) {
-    private var selectedState: Boolean = isSelected
-
-    open val isSelected: Boolean
-        get() = selectedState
-
-    internal fun setSelectedFromLibrary(value: Boolean) {
-        selectedState = value
-    }
-
-    open fun renderingStyle(): MKAnnotationStyle = MKAnnotationStyle.Marker()
-
-    protected open fun extraEquals(other: MKAnnotation): Boolean = true
-
-    protected open fun extraHashCode(): Int = 0
-
-    final override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other == null || this::class != other::class) return false
-        other as MKAnnotation
-
-        return id == other.id &&
-            coordinate == other.coordinate &&
-            title == other.title &&
-            subtitle == other.subtitle &&
-            isVisible == other.isVisible &&
-            extraEquals(other)
-    }
-
-    final override fun hashCode(): Int = listOf(
-        id,
-        coordinate,
-        title,
-        subtitle,
-        isVisible,
-        extraHashCode()
-    ).hashCode()
-
-    override fun toString(): String = "${this::class.simpleName}(id=$id)"
-}
-
-class MKMarkerAnnotation(
-    override val id: String,
-    override val coordinate: MKCoordinate,
-    override val title: String? = null,
-    override val subtitle: String? = null,
-    override val isVisible: Boolean = true,
-    isSelected: Boolean = false,
-    val tintHex: String = "#FF3B30",
-    val glyphText: String? = null,
-    val glyphImageSource: MKImageSource? = MKImageSource.ResourceName("pin")
-) : MKAnnotation(
-    id = id,
-    coordinate = coordinate,
-    title = title,
-    subtitle = subtitle,
-    isVisible = isVisible,
-    isSelected = isSelected
-) {
-    override fun renderingStyle(): MKAnnotationStyle = MKAnnotationStyle.Marker(
-        tintHex = tintHex,
-        glyphText = glyphText,
-        glyphImageSource = glyphImageSource
-    )
-
-    override fun extraEquals(other: MKAnnotation): Boolean {
-        other as MKMarkerAnnotation
-        return tintHex == other.tintHex &&
-            glyphText == other.glyphText &&
-            glyphImageSource == other.glyphImageSource
-    }
-
-    override fun extraHashCode(): Int = listOf(
-        tintHex,
-        glyphText,
-        glyphImageSource
-    ).hashCode()
-}
+data class MKAnnotation(
+    val id: String,
+    val coordinate: MKCoordinate,
+    val title: String? = null,
+    val subtitle: String? = null,
+    val isVisible: Boolean = true,
+    val isDraggable: Boolean = false,
+    val style: MKAnnotationStyle = MKAnnotationStyle.Marker()
+)
 
 data class MKOverlayStyle(
     val strokeColorHex: String = "#007AFF",
@@ -271,81 +196,34 @@ data class MKMapOptions(
     val userLocation: MKUserLocationOptions = MKUserLocationOptions()
 )
 
-data class MKMapState(
+data class MKMapRenderState(
     val region: MKCoordinateRegion,
     val annotations: List<MKAnnotation> = emptyList(),
     val overlays: List<MKOverlay> = emptyList(),
     val options: MKMapOptions = MKMapOptions()
-) {
-    companion object {
-        private val sharedCommandChannel = MKMapCommandChannel()
-    }
+)
 
-    @Synchronized
-    fun selectAnnotation(annotation: MKAnnotation, animated: Boolean = true) {
-        selectAnnotation(annotation.id, animated = animated)
-    }
-
-    @Synchronized
-    fun selectAnnotation(annotationId: String, animated: Boolean = true) {
-        if (annotations.none { it.id == annotationId }) return
-        enqueueOrDispatch(MKMapCommand.SelectAnnotation(annotationId, animated))
-    }
-
-    @Synchronized
-    fun deselectAnnotation(annotation: MKAnnotation, animated: Boolean = false) {
-        deselectAnnotation(annotation.id, animated = animated)
-    }
-
-    @Synchronized
-    fun deselectAnnotation(annotationId: String, animated: Boolean = false) {
-        if (annotations.none { it.id == annotationId }) return
-        enqueueOrDispatch(MKMapCommand.DeselectAnnotation(annotationId, animated))
-    }
-
-    @Synchronized
-    fun bindCommandDispatcher(dispatcher: (MKMapCommand) -> Unit) {
-        sharedCommandChannel.bindDispatcher(dispatcher)
-    }
-
-    @Synchronized
-    fun clearCommandDispatcher() {
-        sharedCommandChannel.clearDispatcher()
-    }
-
-    @Synchronized
-    fun syncSelectedFromMap(annotationId: String, isSelected: Boolean): MKAnnotation? {
-        var target: MKAnnotation? = null
-        annotations.forEach { annotation ->
-            val nextSelected = if (isSelected) {
-                annotation.id == annotationId
-            } else {
-                if (annotation.id != annotationId) {
-                    annotation.isSelected
-                } else {
-                    false
-                }
-            }
-            annotation.setSelectedFromLibrary(nextSelected)
-            if (annotation.id == annotationId) {
-                target = annotation
-            }
-        }
-        return target
-    }
-
-    @Synchronized
-    private fun enqueueOrDispatch(command: MKMapCommand) {
-        sharedCommandChannel.dispatch(command)
-    }
+sealed interface MKMapCommand {
+    data class SelectAnnotation(val annotationId: String, val animated: Boolean = true) : MKMapCommand
+    data class DeselectAnnotation(val animated: Boolean = false) : MKMapCommand
 }
 
-class MKMapCommandChannel {
+class MKMapController {
     private val pendingCommands = ArrayDeque<MKMapCommand>()
     private var dispatcher: ((MKMapCommand) -> Unit)? = null
 
     @Synchronized
-    fun bindDispatcher(nextDispatcher: (MKMapCommand) -> Unit) {
+    fun selectAnnotation(id: String, animated: Boolean = true) {
+        dispatch(MKMapCommand.SelectAnnotation(id, animated))
+    }
+
+    @Synchronized
+    fun deselectAnnotation(animated: Boolean = false) {
+        dispatch(MKMapCommand.DeselectAnnotation(animated))
+    }
+
+    @Synchronized
+    fun bindCommandDispatcher(nextDispatcher: (MKMapCommand) -> Unit) {
         dispatcher = nextDispatcher
         while (pendingCommands.isNotEmpty()) {
             nextDispatcher(pendingCommands.removeFirst())
@@ -353,24 +231,19 @@ class MKMapCommandChannel {
     }
 
     @Synchronized
-    fun clearDispatcher() {
+    fun clearCommandDispatcher() {
         dispatcher = null
     }
 
     @Synchronized
-    fun dispatch(command: MKMapCommand) {
-        val currentDispatcher = dispatcher
-        if (currentDispatcher != null) {
-            currentDispatcher(command)
+    private fun dispatch(command: MKMapCommand) {
+        val current = dispatcher
+        if (current != null) {
+            current(command)
         } else {
             pendingCommands.addLast(command)
         }
     }
-}
-
-sealed interface MKMapCommand {
-    data class SelectAnnotation(val annotationId: String, val animated: Boolean = true) : MKMapCommand
-    data class DeselectAnnotation(val annotationId: String, val animated: Boolean = false) : MKMapCommand
 }
 
 sealed interface MKMapErrorCause {
@@ -386,14 +259,12 @@ sealed interface MKMapEvent {
     data class RegionDidChange(val region: MKCoordinateRegion) : MKMapEvent
     data class MapTapped(val coordinate: MKCoordinate) : MKMapEvent
     data class LongPress(val coordinate: MKCoordinate) : MKMapEvent
-    data class AnnotationSelected(val annotation: MKAnnotation) : MKMapEvent {
-        val id: String get() = annotation.id
-    }
-    data class AnnotationDeselected(val annotation: MKAnnotation) : MKMapEvent {
-        val id: String get() = annotation.id
-    }
-    data class OverlayTapped(val overlay: MKOverlay) : MKMapEvent {
-        val id: String get() = overlay.id
-    }
+    data class AnnotationTapped(val id: String) : MKMapEvent
+    data class AnnotationSelected(val id: String) : MKMapEvent
+    data class AnnotationDeselected(val id: String) : MKMapEvent
+    data class AnnotationDragStart(val id: String) : MKMapEvent
+    data class AnnotationDragging(val id: String, val coordinate: MKCoordinate) : MKMapEvent
+    data class AnnotationDragEnd(val id: String, val coordinate: MKCoordinate) : MKMapEvent
+    data class OverlayTapped(val id: String) : MKMapEvent
     data class UserLocationUpdated(val coordinate: MKCoordinate) : MKMapEvent
 }

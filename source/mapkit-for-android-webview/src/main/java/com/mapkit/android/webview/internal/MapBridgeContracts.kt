@@ -1,7 +1,7 @@
 package com.studiomk.mapkit.webview.internal
 
 import com.studiomk.mapkit.model.MKCoordinateRegion
-import com.studiomk.mapkit.model.MKMapState
+import com.studiomk.mapkit.model.MKMapRenderState
 
 internal data class InternalMapState(
     val centerLat: Double,
@@ -11,7 +11,7 @@ internal data class InternalMapState(
 )
 
 internal object MKBridgeMapper {
-    fun toInternal(state: MKMapState): InternalMapState = InternalMapState(
+    fun toInternal(state: MKMapRenderState): InternalMapState = InternalMapState(
         centerLat = state.region.center.latitude,
         centerLng = state.region.center.longitude,
         latDelta = state.region.span.latitudeDelta,
