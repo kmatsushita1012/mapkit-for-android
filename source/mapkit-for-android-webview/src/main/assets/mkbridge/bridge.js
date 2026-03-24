@@ -427,6 +427,19 @@
 
   function applyMapKitRegion(region) {
     if (!state.map || !window.mapkit || !region) return;
+    try {
+      const current = state.map.region;
+      if (current && current.center && current.span) {
+        const eps = 1e-9;
+        const sameCenterLat = Math.abs(current.center.latitude - region.centerLat) < eps;
+        const sameCenterLng = Math.abs(current.center.longitude - region.centerLng) < eps;
+        const sameLatDelta = Math.abs(current.span.latitudeDelta - region.latDelta) < eps;
+        const sameLngDelta = Math.abs(current.span.longitudeDelta - region.lngDelta) < eps;
+        if (sameCenterLat && sameCenterLng && sameLatDelta && sameLngDelta) {
+          return;
+        }
+      }
+    } catch (_) {}
     const center = new window.mapkit.Coordinate(region.centerLat, region.centerLng);
     const span = new window.mapkit.CoordinateSpan(region.latDelta, region.lngDelta);
     state.map.region = new window.mapkit.CoordinateRegion(center, span);
