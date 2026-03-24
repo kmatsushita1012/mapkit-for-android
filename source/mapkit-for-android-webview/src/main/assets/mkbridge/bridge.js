@@ -35,10 +35,7 @@
     overlayHashesById: {},
     lastSelectedAnnotationId: null,
     pendingDeferredDeselect: null,
-    longPressTimer: null,
-    longPressStart: null,
     longPressHandlersInstalled: false,
-    lastMapTapAt: 0,
   };
 
   function emit(payload) {
@@ -281,101 +278,38 @@
     return null;
   }
 
+  function coordinateFromMapEvent(event) {
+    if (!event) return null;
+    if (event.coordinate && event.coordinate.latitude != null && event.coordinate.longitude != null) {
+      return event.coordinate;
+    }
+    if (event.pointOnPage && event.pointOnPage.x != null && event.pointOnPage.y != null) {
+      return pointToCoordinate(event.pointOnPage.x, event.pointOnPage.y);
+    }
+    const pageX = event.pageX != null ? event.pageX :
+      (event.domEvent && event.domEvent.pageX != null ? event.domEvent.pageX : null);
+    const pageY = event.pageY != null ? event.pageY :
+      (event.domEvent && event.domEvent.pageY != null ? event.domEvent.pageY : null);
+    if (pageX == null || pageY == null) return null;
+    return pointToCoordinate(pageX, pageY);
+  }
+
   function setupLongPressDetection() {
-    const target = state.map && state.map.element ? state.map.element : null;
-    if (!target) return;
     if (state.longPressHandlersInstalled) return;
     state.longPressHandlersInstalled = true;
 
-    let primaryPointerId = null;
-    let pointerDownAt = 0;
-    let moved = false;
-    let longPressFired = false;
-    const moveThresholdSq = 100;
-
-    const clearTimer = function () {
-      if (state.longPressTimer) {
-        clearTimeout(state.longPressTimer);
-        state.longPressTimer = null;
-      }
-    };
-
-    const resetGestureState = function () {
-      clearTimer();
-      state.longPressStart = null;
-      primaryPointerId = null;
-      pointerDownAt = 0;
-      moved = false;
-      longPressFired = false;
-    };
-
-    const onPointerDown = function (event) {
-      if (!event.isPrimary) {
-        resetGestureState();
-        return;
-      }
-      resetGestureState();
-      primaryPointerId = event.pointerId;
-      pointerDownAt = Date.now();
-      state.longPressStart = { x: event.pageX, y: event.pageY };
-      state.longPressTimer = setTimeout(function () {
-        if (!state.longPressStart) return;
-        const c = pointToCoordinate(state.longPressStart.x, state.longPressStart.y);
-        if (!c) return;
-        longPressFired = true;
-        debugLog("emit longPress lat=" + c.latitude + " lng=" + c.longitude);
-        emit({ type: "longPress", lat: c.latitude, lng: c.longitude });
-      }, 550);
-    };
-
-    const onPointerMove = function (event) {
-      if (primaryPointerId == null) return;
-      if (!event.isPrimary || event.pointerId !== primaryPointerId) {
-        resetGestureState();
-        return;
-      }
-      if (!state.longPressStart || !state.longPressTimer) return;
-      const dx = event.pageX - state.longPressStart.x;
-      const dy = event.pageY - state.longPressStart.y;
-      const moveSq = dx * dx + dy * dy;
-      if (moveSq > moveThresholdSq) {
-        moved = true;
-        clearTimer();
-      }
-    };
-
-    const onPointerEnd = function (event) {
-      if (primaryPointerId == null) return;
-      if (event.pointerId === primaryPointerId && state.longPressStart) {
-        const duration = Date.now() - pointerDownAt;
-        const c = pointToCoordinate(event.pageX, event.pageY) ||
-          pointToCoordinate(state.longPressStart.x, state.longPressStart.y);
-        if (!longPressFired && !moved && duration < 550 && c) {
-          const now = Date.now();
-          if (now - state.lastMapTapAt >= 180) {
-            state.lastMapTapAt = now;
-            debugLog("emit mapTapped lat=" + c.latitude + " lng=" + c.longitude);
-            emit({ type: "mapTapped", lat: c.latitude, lng: c.longitude });
-          }
-        }
-      }
-      resetGestureState();
-    };
-
-    target.addEventListener("pointerdown", onPointerDown);
-    target.addEventListener("pointermove", onPointerMove);
-    target.addEventListener("pointerup", onPointerEnd);
-    target.addEventListener("pointercancel", onPointerEnd);
-
-    target.addEventListener("click", function (event) {
-      if (primaryPointerId != null) return;
-      const c = pointToCoordinate(event.pageX, event.pageY);
+    state.map.addEventListener("single-tap", function (event) {
+      const c = coordinateFromMapEvent(event);
       if (!c) return;
-      const now = Date.now();
-      if (now - state.lastMapTapAt < 180) return;
-      state.lastMapTapAt = now;
-      debugLog("emit mapTapped(click) lat=" + c.latitude + " lng=" + c.longitude);
+      debugLog("emit mapTapped lat=" + c.latitude + " lng=" + c.longitude);
       emit({ type: "mapTapped", lat: c.latitude, lng: c.longitude });
+    });
+
+    state.map.addEventListener("long-press", function (event) {
+      const c = coordinateFromMapEvent(event);
+      if (!c) return;
+      debugLog("emit longPress lat=" + c.latitude + " lng=" + c.longitude);
+      emit({ type: "longPress", lat: c.latitude, lng: c.longitude });
     });
   }
 
@@ -383,7 +317,17 @@
     if (!state.map) return;
     state.map.addEventListener("region-change-start", function () {
       try {
-        emit({ type: "regionDidChange", region: state.region, settled: false });
+        const r = state.map.region;
+        if (r && r.center && r.span) {
+          state.region = {
+            centerLat: r.center.latitude,
+            centerLng: r.center.longitude,
+            latDelta: r.span.latitudeDelta,
+            lngDelta: r.span.longitudeDelta,
+          };
+          renderStatus();
+        }
+        emit({ type: "regionWillChange", region: state.region });
       } catch (e) {
         emitBridgeError(e && e.message ? e.message : e);
       }
@@ -400,7 +344,7 @@
           lngDelta: r.span.longitudeDelta,
         };
         renderStatus();
-        emit({ type: "regionDidChange", region: state.region, settled: true });
+        emit({ type: "regionDidChange", region: state.region });
       } catch (e) {
         emitBridgeError(e && e.message ? e.message : e);
       }
@@ -865,7 +809,7 @@
       state.region.centerLat = state.region.centerLat + 0.001;
       state.region.centerLng = state.region.centerLng + 0.001;
       applyMapKitRegion(state.region);
-      emit({ type: "regionDidChange", region: state.region, settled: true });
+      emit({ type: "regionDidChange", region: state.region });
       renderStatus();
     },
 

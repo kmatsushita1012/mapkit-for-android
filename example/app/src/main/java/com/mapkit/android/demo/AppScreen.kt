@@ -389,12 +389,11 @@ internal fun AppScreen() {
                             }
                         }
                         when (event) {
+                            is MKMapEvent.RegionWillChange -> Unit
                             is MKMapEvent.RegionDidChange -> {
-                                if (event.settled) {
-                                    region = event.region
-                                }
+                                region = event.region
                             }
-                            is MKMapEvent.AnnotationTapped -> {
+                            is MKMapEvent.AnnotationSelected -> {
                                 selectedAnnotationId = event.annotation.id
                                 if (immediateDeselectOnAnnotationTap) {
                                     requestImmediateDeselect(event.annotation)
@@ -847,13 +846,17 @@ private fun MKMapEvent.toDisplayText(): String {
         is MKMapEvent.MapLoaded -> "MapLoaded"
         is MKMapEvent.MapError -> "MapError: $cause"
         is MKMapEvent.MapTapped -> "MapTapped(${coordinate.latitude.format6()},${coordinate.longitude.format6()})"
+        is MKMapEvent.RegionWillChange -> {
+            val center = region.center
+            "RegionWillChange(center=${center.latitude.format6()},${center.longitude.format6()})"
+        }
         is MKMapEvent.RegionDidChange -> {
             val center = region.center
-            "RegionDidChange(settled=$settled, center=${center.latitude.format6()},${center.longitude.format6()})"
+            "RegionDidChange(center=${center.latitude.format6()},${center.longitude.format6()})"
         }
 
         is MKMapEvent.LongPress -> "LongPress(${coordinate.latitude.format6()},${coordinate.longitude.format6()})"
-        is MKMapEvent.AnnotationTapped -> "AnnotationTapped(id=$id)"
+        is MKMapEvent.AnnotationSelected -> "AnnotationSelected(id=$id)"
         is MKMapEvent.AnnotationDeselected -> "AnnotationDeselected(id=$id)"
         is MKMapEvent.OverlayTapped -> "OverlayTapped(id=$id)"
         is MKMapEvent.UserLocationUpdated -> {

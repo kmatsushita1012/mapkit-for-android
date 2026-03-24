@@ -382,10 +382,11 @@ sealed interface MKMapErrorCause {
 sealed interface MKMapEvent {
     data object MapLoaded : MKMapEvent
     data class MapError(val cause: MKMapErrorCause) : MKMapEvent
-    data class RegionDidChange(val region: MKCoordinateRegion, val settled: Boolean) : MKMapEvent
+    data class RegionWillChange(val region: MKCoordinateRegion) : MKMapEvent
+    data class RegionDidChange(val region: MKCoordinateRegion) : MKMapEvent
     data class MapTapped(val coordinate: MKCoordinate) : MKMapEvent
     data class LongPress(val coordinate: MKCoordinate) : MKMapEvent
-    data class AnnotationTapped(val annotation: MKAnnotation) : MKMapEvent {
+    data class AnnotationSelected(val annotation: MKAnnotation) : MKMapEvent {
         val id: String get() = annotation.id
     }
     data class AnnotationDeselected(val annotation: MKAnnotation) : MKMapEvent {

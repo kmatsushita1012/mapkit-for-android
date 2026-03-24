@@ -344,6 +344,16 @@ class MKBridgeWebView @JvmOverloads constructor(
     private fun parseEvent(json: JSONObject): MKMapEvent {
         return when (json.optString("type")) {
             "mapLoaded" -> MKMapEvent.MapLoaded
+            "regionWillChange" -> {
+                val region = json.getJSONObject("region")
+                val internal = InternalMapState(
+                    centerLat = region.getDouble("centerLat"),
+                    centerLng = region.getDouble("centerLng"),
+                    latDelta = region.getDouble("latDelta"),
+                    lngDelta = region.getDouble("lngDelta")
+                )
+                MKMapEvent.RegionWillChange(MKBridgeMapper.toRegion(internal))
+            }
             "regionDidChange" -> {
                 val region = json.getJSONObject("region")
                 val internal = InternalMapState(
@@ -352,8 +362,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                     latDelta = region.getDouble("latDelta"),
                     lngDelta = region.getDouble("lngDelta")
                 )
-                val settled = json.optBoolean("settled", true)
-                MKMapEvent.RegionDidChange(MKBridgeMapper.toRegion(internal), settled = settled)
+                MKMapEvent.RegionDidChange(MKBridgeMapper.toRegion(internal))
             }
             "longPress" -> MKMapEvent.LongPress(
                 coordinate = MKCoordinate(
@@ -372,7 +381,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                 val id = json.getString("id")
                 val annotation = syncAnnotationSelection(id = id, isSelected = true)
                 if (annotation != null) {
-                    MKMapEvent.AnnotationTapped(annotation)
+                    MKMapEvent.AnnotationSelected(annotation)
                 } else {
                     MKMapEvent.MapError(
                         MKMapErrorCause.BridgeFailure(
