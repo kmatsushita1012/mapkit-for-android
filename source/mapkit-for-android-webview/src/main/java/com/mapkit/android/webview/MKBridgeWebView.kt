@@ -131,7 +131,7 @@ class MKBridgeWebView @JvmOverloads constructor(
     }
 
     fun applyState(state: MKMapState) {
-        pendingState?.clearCommandDispatcher()
+        // pendingState?.clearCommandDispatcher()
         state.bindCommandDispatcher { command ->
             post { applyCommand(command) }
         }

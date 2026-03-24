@@ -206,7 +206,7 @@ internal fun AppScreen() {
         pendingImmediateDeselectJob?.cancel()
         val annotationId = annotation.id
         pendingImmediateDeselectJob = coroutineScope.launch {
-            delay(120L)
+            delay(100L)
             latestMapState.value.deselectAnnotation(annotationId, animated = false)
         }
     }
