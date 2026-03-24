@@ -8,8 +8,10 @@
 - 「状態変化で表しにくい操作」は state で持たず、callback で受けて `controller` から命令する。
 - `isSelected` は公開 API から削除する。
 - 後方互換は考慮しない(旧 API 併存しない)。
-- Overlay 系の基盤 class / interface は削除し、すべて `data class` にする。
+- 禁止対象は「利用者カスタム拡張を目的とした Annotation/Overlay の基盤 class/interface」。
+- Overlay は必要なら共通 interface を保持してよい(禁止しない)。
 - `AnnotationSelected` / `AnnotationDeselected` は 1 フレーム遅延で通知する。
+- region は「読み取り(state) + 命令(controller)の併用」を採用する。
 
 ---
 
@@ -24,7 +26,7 @@ fun MKMapView(
     controller: MKMapController,
     options: MKMapOptions = MKMapOptions(),
     modifier: Modifier = Modifier,
-    onRegionDidChange: ((MKCoordinateRegion) -> Unit)? = null,
+    onRegionDidChange: ((MKCoordinateRegion) -> Unit)? = null, // state取り込み入口
     content: MKMapContentScope.() -> Unit
 )
 ```
@@ -67,7 +69,6 @@ interface MKMapContentScope {
         isVisible: Boolean = true,
         isDraggable: Boolean = false,
         style: MKAnnotationStyle = MKAnnotationStyle.Marker(),
-        onTap: (() -> Unit)? = null,
         onSelected: (() -> Unit)? = null,
         onDeselected: (() -> Unit)? = null,
         onDragStart: (() -> Unit)? = null,
@@ -97,17 +98,18 @@ MKMapView(
         onDeselected = {
             // UI更新のみ
         },
-        onTap = {
-            // 選択したくなければ即解除
+        onSelected = {
+            // 選択させたくない画面なら即解除命令
             controller.deselectAnnotation(animated = false)
         }
     )
 }
 ```
 
-### 4. Overlay API (すべて data class ベース)
+### 4. Overlay API
 
-Overlay は model 層で下記 data class のみを使用する。基盤 `interface` / `sealed interface` は持たない。
+Overlay は data class を基本にする。  
+ただし共通処理都合で `MKOverlay` のような interface を保持してもよい。
 
 ```kotlin
 data class MKPolylineOverlay(
@@ -155,7 +157,6 @@ data class MKCircleOverlay(
 
 ```kotlin
 internal data class AnnotationCallbacks(
-    val onTap: (() -> Unit)? = null,
     val onSelected: (() -> Unit)? = null,
     val onDeselected: (() -> Unit)? = null,
     val onDragStart: (() -> Unit)? = null,
@@ -172,7 +173,6 @@ internal class MKAnnotationCallbackRegistry {
 
     fun dispatch(event: MKMapEvent) {
         when (event) {
-            is MKMapEvent.AnnotationTapped -> callbacksById[event.id]?.onTap?.invoke()
             is MKMapEvent.AnnotationSelected -> callbacksById[event.id]?.onSelected?.invoke()
             is MKMapEvent.AnnotationDeselected -> callbacksById[event.id]?.onDeselected?.invoke()
             is MKMapEvent.AnnotationDragStart -> callbacksById[event.id]?.onDragStart?.invoke()
@@ -183,6 +183,18 @@ internal class MKAnnotationCallbackRegistry {
     }
 }
 ```
+
+### 2.1 Region 方針(検討結果)
+
+region は「state だけ」でも「命令だけ」でもなく、次の併用を採用する。
+
+1. 読み取り: `onRegionDidChange` で利用側 state に取り込む
+2. 書き込み(明示操作): `controller.setRegion(...)`, `controller.fitToCoordinates(...)`
+
+採用理由:
+- ジェスチャー由来の region 変化を UI 側で観測できる
+- ボタン操作や外部イベントからのジャンプを命令的に実行できる
+- Compose でありがちな「再代入競合」を減らせる
 
 ### 3. 1フレーム遅延の必須仕様
 
@@ -229,7 +241,7 @@ internal class MKMapControllerImpl(
 ## 破壊的変更(明示)
 
 1. `isSelected` 削除
-2. overlay 基盤 interface/class 削除
+2. Annotation のカスタム拡張用 基盤 interface/class 削除
 3. 旧 `state.annotations/overlays` 前提 API 削除
 4. 旧イベント名/イベント形状の見直し
 
@@ -243,7 +255,8 @@ internal class MKMapControllerImpl(
 - `isSelected` が公開 API に存在しない。
 - callback で受けた事象に対して controller 命令で操作できる。
 - `AnnotationSelected` / `AnnotationDeselected` が 1 フレーム遅延で発火する。
-- overlay モデルに基盤 class/interface が残っていない。
+- `Annotation.onTap` が存在せず、選択契機は `onSelected` に一本化されている。
+- region が `onRegionDidChange`(読み取り) + controller(書き込み) で扱える。
 
 ---
 
@@ -254,6 +267,5 @@ internal class MKMapControllerImpl(
 3. Annotation callback registry 実装
 4. JS `select/deselect` の 1 フレーム遅延実装
 5. `isSelected` 削除
-6. overlay 基盤 type 削除 + data class 固定
+6. Annotation カスタム拡張用の基盤 type を削除
 7. example を controller 命令型へ更新
-
