@@ -33,7 +33,6 @@ import com.studiomk.mapkit.api.MKMapView
 import com.studiomk.mapkit.api.rememberMKMapController
 import com.studiomk.mapkit.model.MKAnnotationStyle
 import com.studiomk.mapkit.model.MKAppearanceOption
-import com.studiomk.mapkit.model.MKCameraZoomRange
 import com.studiomk.mapkit.model.MKCoordinate
 import com.studiomk.mapkit.model.MKCoordinateRegion
 import com.studiomk.mapkit.model.MKImageSource
@@ -554,17 +553,6 @@ internal fun AppScreen() {
                         if (s == setOf("cafe", "park")) PoiFilterPreset.excludeCafePark else PoiFilterPreset.all
                     }
                 }
-                val zoomRangePreset = when (val z = options.cameraZoomRange) {
-                    null -> ZoomRangePreset.none
-                    MKCameraZoomRange(minDistanceMeter = 150.0, maxDistanceMeter = 20_000.0) ->
-                        ZoomRangePreset.city
-
-                    MKCameraZoomRange(minDistanceMeter = 50.0, maxDistanceMeter = 3_000.0) ->
-                        ZoomRangePreset.district
-
-                    else -> ZoomRangePreset.none
-                }
-
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -608,29 +596,6 @@ internal fun AppScreen() {
                                     PoiFilterPreset.excludeCafePark -> MKPoiFilter.Exclude(listOf("cafe", "park"))
                                 }
                                 options = options.copy(poiFilter = filter)
-                            }
-                        )
-                        EnumSelector(
-                            label = "Zoom Range (Deprecated)",
-                            value = zoomRangePreset,
-                            values = ZoomRangePreset.entries,
-                            onSelected = { preset ->
-                                // NOTE: MapKit JS側挙動差により、ズーム制約更新時に中心が移動する場合がある。
-                                // そのため現状は非推奨。必要時のみ利用し、違和感があれば none に戻す。
-                                options = options.copy(
-                                    cameraZoomRange = when (preset) {
-                                        ZoomRangePreset.none -> null
-                                        ZoomRangePreset.city -> MKCameraZoomRange(
-                                            minDistanceMeter = 150.0,
-                                            maxDistanceMeter = 20_000.0
-                                        )
-
-                                        ZoomRangePreset.district -> MKCameraZoomRange(
-                                            minDistanceMeter = 50.0,
-                                            maxDistanceMeter = 3_000.0
-                                        )
-                                    }
-                                )
                             }
                         )
                         EnumSelector(

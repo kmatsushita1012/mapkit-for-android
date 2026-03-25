@@ -310,14 +310,6 @@ class MKBridgeWebView @JvmOverloads constructor(
                         .put("categories", JSONArray(filter.categories))
                 }
             )
-            .put(
-                "cameraZoomRange",
-                state.options.cameraZoomRange?.let { zoomRange ->
-                    JSONObject()
-                        .put("minDistanceMeter", zoomRange.minDistanceMeter)
-                        .put("maxDistanceMeter", zoomRange.maxDistanceMeter)
-                }
-            )
             .put("isRotateEnabled", state.options.isRotateEnabled)
             .put("isScrollEnabled", state.options.isScrollEnabled)
             .put("isZoomEnabled", state.options.isZoomEnabled)

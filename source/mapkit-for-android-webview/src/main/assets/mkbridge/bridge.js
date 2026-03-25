@@ -18,7 +18,6 @@
     showsMapTypeControl: false,
     showsPointsOfInterest: true,
     poiFilter: { type: "all", categories: [] },
-    cameraZoomRange: null,
     isRotateEnabled: true,
     isScrollEnabled: true,
     isZoomEnabled: true,
@@ -183,8 +182,8 @@
 
       if (window.mapkit && window.mapkit.PointOfInterestFilter) {
         if (forceHideAll) {
-          if (typeof window.mapkit.PointOfInterestFilter.excludingAll === "function") {
-            state.map.pointOfInterestFilter = window.mapkit.PointOfInterestFilter.excludingAll();
+          if (window.mapkit.PointOfInterestFilter.excludingAllCategories) {
+            state.map.pointOfInterestFilter = window.mapkit.PointOfInterestFilter.excludingAllCategories;
             return;
           }
         }
@@ -203,22 +202,13 @@
           }
         }
 
+        if (type === "all" && window.mapkit.PointOfInterestFilter.includingAllCategories) {
+          state.map.pointOfInterestFilter = window.mapkit.PointOfInterestFilter.includingAllCategories;
+          return;
+        }
+
         state.map.pointOfInterestFilter = null;
       }
-    } catch (_) {}
-  }
-
-  function applyCameraZoomRange(range) {
-    if (!state.mapReady || !state.map) return;
-    try {
-      if (!window.mapkit || typeof window.mapkit.CameraZoomRange === "undefined") return;
-      if (!range || (range.minDistanceMeter == null && range.maxDistanceMeter == null)) {
-        state.map.cameraZoomRange = null;
-        return;
-      }
-      const minD = (range.minDistanceMeter == null) ? undefined : range.minDistanceMeter;
-      const maxD = (range.maxDistanceMeter == null) ? undefined : range.maxDistanceMeter;
-      state.map.cameraZoomRange = new window.mapkit.CameraZoomRange(minD, maxD);
     } catch (_) {}
   }
 
@@ -641,7 +631,6 @@
       state.map.showsPointsOfInterest = !!effectivePoi;
     } catch (_) {}
     applyPoiFilter(state.poiFilter, effectivePoi);
-    applyCameraZoomRange(state.cameraZoomRange);
 
     try {
       state.map.showsCompass = featureVisibilityFor(!!state.showsCompass);
@@ -806,9 +795,6 @@
       }
       if (payload && payload.poiFilter) {
         state.poiFilter = payload.poiFilter;
-      }
-      if (payload && typeof payload.cameraZoomRange !== "undefined") {
-        state.cameraZoomRange = payload.cameraZoomRange;
       }
       if (payload && typeof payload.isRotateEnabled !== "undefined") state.isRotateEnabled = !!payload.isRotateEnabled;
       if (payload && typeof payload.isScrollEnabled !== "undefined") state.isScrollEnabled = !!payload.isScrollEnabled;

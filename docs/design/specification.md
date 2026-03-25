@@ -204,7 +204,6 @@
 - `showsMapTypeControl: Boolean`
 - `showsPointsOfInterest: Boolean`
 - `poiFilter: PoiFilter`
-- `cameraZoomRange: CameraZoomRange?`
 - `isRotateEnabled: Boolean`
 - `isScrollEnabled: Boolean`
 - `isZoomEnabled: Boolean`
@@ -230,7 +229,7 @@
 - `mapStyle -> map.mapType` 系へ変換
 - UI 表示系(compass/scale/zoom/mapTypeControl)は map control 設定へ変換
 - `poiFilter` は `pointOfInterestFilter` に変換
-- `cameraZoomRange` は `map.cameraZoomRange` に変換
+  - `none` は `PointOfInterestFilter.excludingAllCategories` を利用し、POI を完全非表示にする
 - `userLocation` は `showsUserLocation` と WebView geolocation 許可フローに変換
 
 #### 5.2.2 適用順序
@@ -256,6 +255,6 @@
 - interactive 操作中の押し戻しが発生しない。
 - Annotation/Overlay が差分更新される。
 - Default 表示 + Custom フックが動作する。
-- mapStyle / zoomControl / poiFilter / cameraZoomRange / userLocation が反映される。
+- mapStyle / zoomControl / poiFilter / userLocation が反映される。
 - token 未設定時に明示的エラーが返る。
 - `source` と `example` が分離され、example で動作確認可能。
