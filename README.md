@@ -5,7 +5,7 @@ English | [日本語](README.ja.md)
 Kotlin library that bridges MapKit JS on Android `WebView`.
 You can control region, annotations, overlays, and map options through Kotlin models and `MKMapView` for Compose.
 
-## Install (JitPack, v0.3.0)
+## Install (JitPack, v0.4.0)
 
 ### 1. Add JitPack to `settings.gradle.kts`
 
@@ -26,7 +26,7 @@ Recommended: single aggregate artifact.
 
 ```kotlin
 dependencies {
-    implementation("com.github.kmatsushita1012:mapkit-for-android:v0.3.0")
+    implementation("com.github.kmatsushita1012:mapkit-for-android:v0.4.0")
 }
 ```
 
@@ -34,9 +34,9 @@ You can also use per-module artifacts:
 
 ```kotlin
 dependencies {
-    implementation("com.github.kmatsushita1012.mapkit-for-android:mapkit-core:v0.3.0")
-    implementation("com.github.kmatsushita1012.mapkit-for-android:mapkit-webview:v0.3.0")
-    implementation("com.github.kmatsushita1012.mapkit-for-android:mapkit-compose:v0.3.0")
+    implementation("com.github.kmatsushita1012.mapkit-for-android:mapkit-core:v0.4.0")
+    implementation("com.github.kmatsushita1012.mapkit-for-android:mapkit-webview:v0.4.0")
+    implementation("com.github.kmatsushita1012.mapkit-for-android:mapkit-compose:v0.4.0")
 }
 ```
 
