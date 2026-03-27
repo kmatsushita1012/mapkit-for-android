@@ -4,7 +4,10 @@ import android.annotation.SuppressLint
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.util.AttributeSet
+import android.util.Log
+import android.webkit.ConsoleMessage
 import android.webkit.GeolocationPermissions
 import android.webkit.JavascriptInterface
 import android.webkit.WebResourceRequest
@@ -17,6 +20,7 @@ import androidx.webkit.WebViewAssetLoader
 import com.studiomk.mapkit.model.MKCoordinate
 import com.studiomk.mapkit.model.MKCoordinateRegion
 import com.studiomk.mapkit.model.MKCircleOverlay
+import com.studiomk.mapkit.model.MKMapKitConfig
 import com.studiomk.mapkit.model.MKMapErrorCause
 import com.studiomk.mapkit.model.MKMapCommand
 import com.studiomk.mapkit.model.MKMapEvent
@@ -26,6 +30,7 @@ import com.studiomk.mapkit.model.MKImageSource
 import com.studiomk.mapkit.model.MKPoiFilter
 import com.studiomk.mapkit.model.MKPolygonOverlay
 import com.studiomk.mapkit.model.MKPolylineOverlay
+import com.studiomk.mapkit.model.MKWebAssetSource
 import com.studiomk.mapkit.webview.internal.InternalMapState
 import com.studiomk.mapkit.webview.internal.MKBridgeMapper
 import androidx.core.content.ContextCompat
@@ -35,11 +40,15 @@ import org.json.JSONObject
 @SuppressLint("SetJavaScriptEnabled")
 class MKBridgeWebView @JvmOverloads constructor(
     context: Context,
-    attrs: AttributeSet? = null
+    attrs: AttributeSet? = null,
+    mapKitConfig: MKMapKitConfig = MKMapKitConfig()
 ) : WebView(context, attrs) {
-    private val assetLoader = WebViewAssetLoader.Builder()
-        .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
-        .build()
+    companion object {
+        private const val LOG_TAG = "MKBridgeWebView"
+    }
+
+    private var mapKitConfig: MKMapKitConfig = mapKitConfig
+    private var assetLoader: WebViewAssetLoader = buildAssetLoader(mapKitConfig)
 
     private var onEvent: ((MKMapEvent) -> Unit)? = null
     private var isPageReady = false
@@ -80,6 +89,14 @@ class MKBridgeWebView @JvmOverloads constructor(
         isLongClickable = false
         setOnLongClickListener { true }
         webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                Log.d(
+                    LOG_TAG,
+                    "console[${consoleMessage.messageLevel()}] ${consoleMessage.message()} @ ${consoleMessage.sourceId()}:${consoleMessage.lineNumber()}"
+                )
+                return true
+            }
+
             override fun onGeolocationPermissionsShowPrompt(
                 origin: String?,
                 callback: GeolocationPermissions.Callback?
@@ -105,15 +122,42 @@ class MKBridgeWebView @JvmOverloads constructor(
                 return assetLoader.shouldInterceptRequest(request.url)
             }
 
+            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                Log.d(LOG_TAG, "page started: $url")
+            }
+
             override fun onPageFinished(view: WebView?, url: String?) {
+                Log.d(LOG_TAG, "page finished: $url")
                 isPageReady = true
                 sendInitIfPossible()
                 flushPendingState()
                 flushPendingCommands()
             }
+
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: android.webkit.WebResourceError
+            ) {
+                Log.e(
+                    LOG_TAG,
+                    "web error url=${request.url} code=${error.errorCode} desc=${error.description}"
+                )
+            }
+
+            override fun onReceivedHttpError(
+                view: WebView,
+                request: WebResourceRequest,
+                errorResponse: WebResourceResponse
+            ) {
+                Log.e(
+                    LOG_TAG,
+                    "http error url=${request.url} status=${errorResponse.statusCode}"
+                )
+            }
         }
         addJavascriptInterface(androidBridge, "AndroidMKBridge")
-        loadUrl("https://appassets.androidplatform.net/assets/mkbridge/index.html")
+        loadUrl(entryUrl(mapKitConfig))
     }
 
     fun setEventListener(listener: (MKMapEvent) -> Unit) {
@@ -123,6 +167,16 @@ class MKBridgeWebView @JvmOverloads constructor(
     fun ensureInitialized(token: String) {
         pendingToken = token
         sendInitIfPossible()
+    }
+
+    fun applyMapKitConfig(config: MKMapKitConfig) {
+        if (mapKitConfig == config) return
+        mapKitConfig = config
+        assetLoader = buildAssetLoader(config)
+        isPageReady = false
+        isJsInitSent = false
+        lastAppliedPayload = null
+        loadUrl(entryUrl(config))
     }
 
     fun applyState(state: MKMapRenderState) {
@@ -188,6 +242,29 @@ class MKBridgeWebView @JvmOverloads constructor(
     private fun evaluateJavascriptSafe(script: String) {
         evaluateJavascript(script, ValueCallback { })
     }
+
+    private fun buildAssetLoader(config: MKMapKitConfig): WebViewAssetLoader {
+        val builder = WebViewAssetLoader.Builder().setDomain(config.webDomain)
+        config.webAssetPaths.forEach { path ->
+            when (path.source) {
+                MKWebAssetSource.assets -> {
+                    builder.addPathHandler(
+                        path.pathPrefix,
+                        WebViewAssetLoader.AssetsPathHandler(context)
+                    )
+                }
+                MKWebAssetSource.resources -> {
+                    builder.addPathHandler(
+                        path.pathPrefix,
+                        WebViewAssetLoader.ResourcesPathHandler(context)
+                    )
+                }
+            }
+        }
+        return builder.build()
+    }
+
+    private fun entryUrl(config: MKMapKitConfig): String = "https://${config.webDomain}${config.entryPath}"
 
     fun simulateAnnotationTap() {
         evaluateJavascriptSafe("window.MKBridge && window.MKBridge.simulateAnnotationTap && window.MKBridge.simulateAnnotationTap();")

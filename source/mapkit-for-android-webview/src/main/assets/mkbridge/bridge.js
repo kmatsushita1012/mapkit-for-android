@@ -43,7 +43,76 @@
   }
 
   function debugLog(message) {
+    try {
+      if (typeof console !== "undefined" && typeof console.log === "function") {
+        console.log("[MKBridge] " + String(message));
+      }
+    } catch (_) {}
   }
+
+  function debugWarn(message) {
+    try {
+      if (typeof console !== "undefined" && typeof console.warn === "function") {
+        console.warn("[MKBridge] " + String(message));
+      } else {
+        debugLog("WARN " + String(message));
+      }
+    } catch (_) {}
+  }
+
+  function debugError(message) {
+    try {
+      if (typeof console !== "undefined" && typeof console.error === "function") {
+        console.error("[MKBridge] " + String(message));
+      } else {
+        debugLog("ERROR " + String(message));
+      }
+    } catch (_) {}
+  }
+
+  function currentOrigin() {
+    try {
+      if (window.location && window.location.origin) return String(window.location.origin);
+      return "unknown-origin";
+    } catch (_) {
+      return "unknown-origin";
+    }
+  }
+
+  function tokenSummary(token) {
+    if (typeof token !== "string" || token.length === 0) return "missing";
+    const head = token.slice(0, 12);
+    return "present(len=" + token.length + ", head=" + head + "...)";
+  }
+
+  function installGlobalErrorHandlers() {
+    if (typeof window === "undefined") return;
+    if (window.__mkBridgeGlobalErrorInstalled) return;
+    window.__mkBridgeGlobalErrorInstalled = true;
+
+    try {
+      window.addEventListener("error", function (event) {
+        const message = event && event.message ? event.message : "unknown js error";
+        const file = event && event.filename ? event.filename : "unknown";
+        const line = event && event.lineno ? event.lineno : 0;
+        const col = event && event.colno ? event.colno : 0;
+        debugError("window.error message=" + message + " at " + file + ":" + line + ":" + col);
+      });
+    } catch (_) {}
+
+    try {
+      window.addEventListener("unhandledrejection", function (event) {
+        const reason = event && typeof event.reason !== "undefined"
+          ? String(event.reason)
+          : "unknown rejection";
+        debugError("window.unhandledrejection reason=" + reason);
+      });
+    } catch (_) {}
+
+    debugLog("global error handlers installed");
+  }
+
+  installGlobalErrorHandlers();
 
   function emitBridgeError(message) {
     emit({
@@ -667,7 +736,7 @@
   }
 
   function initializeMapKit() {
-    debugLog("initializeMapKit called");
+    debugLog("initializeMapKit called origin=" + currentOrigin() + " jwt=" + tokenSummary(state.token));
     return loadMapKitScriptIfNeeded().then(() => {
       if (!window.mapkit) throw new Error("mapkit is unavailable");
       if (!state.token || !String(state.token).startsWith("eyJ")) {
@@ -676,7 +745,7 @@
 
       const initOptions = {
         authorizationCallback: function (done) {
-          debugLog("authorizationCallback called");
+          debugLog("authorizationCallback called origin=" + currentOrigin() + " jwt=" + tokenSummary(state.token));
           done(state.token);
         },
       };
@@ -758,7 +827,7 @@
 
   window.MKBridge = {
     init: function (token) {
-      debugLog("init called from kotlin");
+      debugLog("init called from kotlin origin=" + currentOrigin() + " jwt=" + tokenSummary(token));
       state.token = token;
       initializeMapKit()
         .then(function () {
