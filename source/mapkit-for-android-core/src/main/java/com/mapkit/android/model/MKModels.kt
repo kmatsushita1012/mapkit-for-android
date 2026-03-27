@@ -176,6 +176,45 @@ data class MKMapOptions(
     val userLocation: MKUserLocationOptions = MKUserLocationOptions()
 )
 
+enum class MKWebAssetSource {
+    assets,
+    resources
+}
+
+data class MKWebAssetPath(
+    val source: MKWebAssetSource,
+    val pathPrefix: String
+) {
+    init {
+        require(pathPrefix.startsWith("/")) { "pathPrefix must start with '/': $pathPrefix" }
+        require(pathPrefix.endsWith("/")) { "pathPrefix must end with '/': $pathPrefix" }
+    }
+
+    companion object {
+        fun assets(pathPrefix: String): MKWebAssetPath = MKWebAssetPath(
+            source = MKWebAssetSource.assets,
+            pathPrefix = pathPrefix
+        )
+
+        fun resources(pathPrefix: String): MKWebAssetPath = MKWebAssetPath(
+            source = MKWebAssetSource.resources,
+            pathPrefix = pathPrefix
+        )
+    }
+}
+
+data class MKMapKitConfig(
+    val webDomain: String = "appassets.androidplatform.net",
+    val webAssetPaths: List<MKWebAssetPath> = listOf(MKWebAssetPath.assets("/assets/")),
+    val entryPath: String = "/assets/mkbridge/index.html"
+) {
+    init {
+        require(webDomain.isNotBlank()) { "webDomain must not be blank" }
+        require(webAssetPaths.isNotEmpty()) { "webAssetPaths must not be empty" }
+        require(entryPath.startsWith("/")) { "entryPath must start with '/': $entryPath" }
+    }
+}
+
 data class MKMapRenderState(
     val region: MKCoordinateRegion,
     val annotations: List<MKAnnotation> = emptyList(),

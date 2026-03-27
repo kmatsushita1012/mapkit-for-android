@@ -44,14 +44,19 @@ dependencies {
 
 ### 1. Prepare Apple MapKit JS token
 
-Generate a MapKit JS JWT and inject it at app startup via `MKMapKit.init(token)`.
+Generate a MapKit JS JWT and inject it at app startup via `MKMapKit.init(token, config)`.
 
 ```kotlin
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        MKMapKit.init(BuildConfig.MAPKIT_JS_TOKEN)
+        MKMapKit.init(
+            token = BuildConfig.MAPKIT_JS_TOKEN,
+            config = MKMapKitConfig(
+                webDomain = BuildConfig.MAPKIT_JS_WEB_DOMAIN
+            )
+        )
 
         setContent { App() }
     }
@@ -62,6 +67,7 @@ class MainActivity : ComponentActivity() {
 
 ```properties
 MAPKIT_JS_TOKEN=YOUR_MAPKIT_JS_JWT
+MAPKIT_JS_WEB_DOMAIN=maps.example.com
 ```
 
 `build.gradle.kts` example to load token from `local.properties` with env-var fallback:
@@ -78,10 +84,14 @@ android {
         val mapToken = localProps.getProperty("MAPKIT_JS_TOKEN")
             ?: System.getenv("MAPKIT_JS_TOKEN")
             ?: "DUMMY_TOKEN_FOR_DEMO"
+        val mapWebDomain = localProps.getProperty("MAPKIT_JS_WEB_DOMAIN")
+            ?: System.getenv("MAPKIT_JS_WEB_DOMAIN")
+            ?: "appassets.androidplatform.net"
         val escapedMapToken = mapToken
             .replace("\\", "\\\\")
             .replace("\"", "\\\"")
         buildConfigField("String", "MAPKIT_JS_TOKEN", "\"$escapedMapToken\"")
+        buildConfigField("String", "MAPKIT_JS_WEB_DOMAIN", "\"$mapWebDomain\"")
     }
 }
 ```

@@ -253,7 +253,8 @@ fun MKMapView(
     AndroidView(
         modifier = modifier,
         factory = { context ->
-            MKBridgeWebView(context).also { webView ->
+            val config = MKMapKit.currentConfig()
+            MKBridgeWebView(context, mapKitConfig = config).also { webView ->
                 webView.setEventListener { event ->
                     when (event) {
                         is MKMapEvent.MapLoaded -> latestOnMapLoaded.value?.invoke()
@@ -296,6 +297,7 @@ fun MKMapView(
             }
         },
         update = { webView ->
+            webView.applyMapKitConfig(MKMapKit.currentConfig())
             webView.setEventListener { event ->
                 when (event) {
                     is MKMapEvent.MapLoaded -> latestOnMapLoaded.value?.invoke()

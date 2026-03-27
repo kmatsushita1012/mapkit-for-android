@@ -24,10 +24,17 @@ android {
         val mapToken = localProps.getProperty("MAPKIT_JS_TOKEN")
             ?: System.getenv("MAPKIT_JS_TOKEN")
             ?: "DUMMY_TOKEN_FOR_DEMO"
+        val mapWebDomain = localProps.getProperty("MAPKIT_JS_WEB_DOMAIN")
+            ?: System.getenv("MAPKIT_JS_WEB_DOMAIN")
+            ?: "appassets.androidplatform.net"
         val escapedMapToken = mapToken
             .replace("\\", "\\\\")
             .replace("\"", "\\\"")
+        val escapedMapWebDomain = mapWebDomain
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
         buildConfigField("String", "MAPKIT_JS_TOKEN", "\"$escapedMapToken\"")
+        buildConfigField("String", "MAPKIT_JS_WEB_DOMAIN", "\"$escapedMapWebDomain\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

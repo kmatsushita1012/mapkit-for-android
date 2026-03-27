@@ -43,9 +43,60 @@
   }
 
   function debugLog(message) {
+    // keep silent in normal operation to avoid noisy console output
   }
 
+  function debugWarn(message) {
+    try {
+      if (typeof console !== "undefined" && typeof console.warn === "function") {
+        console.warn("[MKBridge] " + String(message));
+      } else {
+        debugLog("WARN " + String(message));
+      }
+    } catch (_) {}
+  }
+
+  function debugError(message) {
+    try {
+      if (typeof console !== "undefined" && typeof console.error === "function") {
+        console.error("[MKBridge] " + String(message));
+      } else {
+        debugLog("ERROR " + String(message));
+      }
+    } catch (_) {}
+  }
+
+  function installGlobalErrorHandlers() {
+    if (typeof window === "undefined") return;
+    if (window.__mkBridgeGlobalErrorInstalled) return;
+    window.__mkBridgeGlobalErrorInstalled = true;
+
+    try {
+      window.addEventListener("error", function (event) {
+        const message = event && event.message ? event.message : "unknown js error";
+        const file = event && event.filename ? event.filename : "unknown";
+        const line = event && event.lineno ? event.lineno : 0;
+        const col = event && event.colno ? event.colno : 0;
+        debugError("window.error message=" + message + " at " + file + ":" + line + ":" + col);
+      });
+    } catch (_) {}
+
+    try {
+      window.addEventListener("unhandledrejection", function (event) {
+        const reason = event && typeof event.reason !== "undefined"
+          ? String(event.reason)
+          : "unknown rejection";
+        debugError("window.unhandledrejection reason=" + reason);
+      });
+    } catch (_) {}
+
+    debugLog("global error handlers installed");
+  }
+
+  installGlobalErrorHandlers();
+
   function emitBridgeError(message) {
+    debugError("bridgeError " + String(message || "unknown bridge error"));
     emit({
       type: "bridgeError",
       message: String(message || "unknown bridge error"),
@@ -667,7 +718,6 @@
   }
 
   function initializeMapKit() {
-    debugLog("initializeMapKit called");
     return loadMapKitScriptIfNeeded().then(() => {
       if (!window.mapkit) throw new Error("mapkit is unavailable");
       if (!state.token || !String(state.token).startsWith("eyJ")) {
@@ -676,7 +726,6 @@
 
       const initOptions = {
         authorizationCallback: function (done) {
-          debugLog("authorizationCallback called");
           done(state.token);
         },
       };
@@ -758,7 +807,6 @@
 
   window.MKBridge = {
     init: function (token) {
-      debugLog("init called from kotlin");
       state.token = token;
       initializeMapKit()
         .then(function () {
