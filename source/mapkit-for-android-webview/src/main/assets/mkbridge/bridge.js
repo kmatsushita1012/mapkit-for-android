@@ -43,11 +43,7 @@
   }
 
   function debugLog(message) {
-    try {
-      if (typeof console !== "undefined" && typeof console.log === "function") {
-        console.log("[MKBridge] " + String(message));
-      }
-    } catch (_) {}
+    // keep silent in normal operation to avoid noisy console output
   }
 
   function debugWarn(message) {
@@ -68,21 +64,6 @@
         debugLog("ERROR " + String(message));
       }
     } catch (_) {}
-  }
-
-  function currentOrigin() {
-    try {
-      if (window.location && window.location.origin) return String(window.location.origin);
-      return "unknown-origin";
-    } catch (_) {
-      return "unknown-origin";
-    }
-  }
-
-  function tokenSummary(token) {
-    if (typeof token !== "string" || token.length === 0) return "missing";
-    const head = token.slice(0, 12);
-    return "present(len=" + token.length + ", head=" + head + "...)";
   }
 
   function installGlobalErrorHandlers() {
@@ -115,6 +96,7 @@
   installGlobalErrorHandlers();
 
   function emitBridgeError(message) {
+    debugError("bridgeError " + String(message || "unknown bridge error"));
     emit({
       type: "bridgeError",
       message: String(message || "unknown bridge error"),
@@ -736,7 +718,6 @@
   }
 
   function initializeMapKit() {
-    debugLog("initializeMapKit called origin=" + currentOrigin() + " jwt=" + tokenSummary(state.token));
     return loadMapKitScriptIfNeeded().then(() => {
       if (!window.mapkit) throw new Error("mapkit is unavailable");
       if (!state.token || !String(state.token).startsWith("eyJ")) {
@@ -745,7 +726,6 @@
 
       const initOptions = {
         authorizationCallback: function (done) {
-          debugLog("authorizationCallback called origin=" + currentOrigin() + " jwt=" + tokenSummary(state.token));
           done(state.token);
         },
       };
@@ -827,7 +807,6 @@
 
   window.MKBridge = {
     init: function (token) {
-      debugLog("init called from kotlin origin=" + currentOrigin() + " jwt=" + tokenSummary(token));
       state.token = token;
       initializeMapKit()
         .then(function () {

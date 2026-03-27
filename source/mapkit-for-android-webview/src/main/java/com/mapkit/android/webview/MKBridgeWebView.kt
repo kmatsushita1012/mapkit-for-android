@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.util.AttributeSet
 import android.util.Log
 import android.webkit.ConsoleMessage
@@ -122,12 +121,7 @@ class MKBridgeWebView @JvmOverloads constructor(
                 return assetLoader.shouldInterceptRequest(request.url)
             }
 
-            override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                Log.d(LOG_TAG, "page started: $url")
-            }
-
             override fun onPageFinished(view: WebView?, url: String?) {
-                Log.d(LOG_TAG, "page finished: $url")
                 isPageReady = true
                 sendInitIfPossible()
                 flushPendingState()
