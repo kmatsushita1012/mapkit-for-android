@@ -26,7 +26,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("com.github.kmatsushita1012.mapkit-android:mapkit:v0.4.2")
+    implementation("com.github.kmatsushita1012:mapkit-android:v0.4.2")
 }
 ```
 
@@ -150,8 +150,8 @@ fun SampleMap() {
 
 ## モジュール構成
 
-- `source/mapkit-for-android`: 導入を簡単にする集約モジュール
-- `source/mapkit-for-android-core`: 公開モデル/初期化 API
-- `source/mapkit-for-android-webview`: WebView + MapKit JS bridge
-- `source/mapkit-for-android-compose`: Compose 向け API (`MKMapView`)
+- `source/mapkit-android`: 導入を簡単にする集約モジュール
+- `source/mapkit-android-core`: 公開モデル/初期化 API
+- `source/mapkit-android-webview`: WebView + MapKit JS bridge
+- `source/mapkit-android-compose`: Compose 向け API (`MKMapView`)
 - `example/app`: サンプルアプリ

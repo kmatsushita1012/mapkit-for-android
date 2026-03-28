@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.studiomk.mapkit.webview"
+    namespace = "com.studiomk.mapkit"
     compileSdk = 36
 
     defaultConfig {
@@ -30,20 +30,18 @@ android {
 }
 
 dependencies {
-    api(project(":source:mapkit-for-android-core"))
-    implementation(libs.androidx.webkit)
-    testImplementation(libs.junit)
+    api(project(":source:mapkit-android-compose"))
 }
 
 publishing {
     publications {
         register<MavenPublication>("release") {
             groupId = providers.gradleProperty("POM_GROUP_ID").get()
-            artifactId = "mapkit-webview"
+            artifactId = "mapkit"
             version = providers.gradleProperty("VERSION_NAME").get()
 
             pom {
-                name.set("MapKit Android WebView Bridge")
+                name.set("MapKit for Android")
                 description.set(providers.gradleProperty("POM_DESCRIPTION").get())
                 url.set(providers.gradleProperty("POM_URL").get())
                 licenses {

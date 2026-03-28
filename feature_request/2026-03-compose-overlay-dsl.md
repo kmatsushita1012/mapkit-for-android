@@ -1,7 +1,7 @@
 # Feature Request: MapController Command Architecture (No Selection State)
 
 作成日: 2026-03-24  
-対象: `mapkit-for-android-compose`, `mapkit-for-android-core`, `mapkit-for-android-webview`
+対象: `mapkit-android-compose`, `mapkit-android-core`, `mapkit-android-webview`
 
 ## 結論(この設計で固定)
 - 大元 API は `MKMapView(region, controller, options)` を中心にする。

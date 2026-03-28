@@ -26,7 +26,7 @@ Recommended: single aggregate artifact.
 
 ```kotlin
 dependencies {
-    implementation("com.github.kmatsushita1012.mapkit-android:mapkit:v0.4.2")
+    implementation("com.github.kmatsushita1012:mapkit-android:v0.4.2")
 }
 ```
 
@@ -150,8 +150,8 @@ fun SampleMap() {
 
 ## Modules
 
-- `source/mapkit-for-android`: aggregate artifact for easier adoption
-- `source/mapkit-for-android-core`: public models and init API
-- `source/mapkit-for-android-webview`: WebView + MapKit JS bridge
-- `source/mapkit-for-android-compose`: Compose API (`MKMapView`)
+- `source/mapkit-android`: aggregate artifact for easier adoption
+- `source/mapkit-android-core`: public models and init API
+- `source/mapkit-android-webview`: WebView + MapKit JS bridge
+- `source/mapkit-android-compose`: Compose API (`MKMapView`)
 - `example/app`: sample app

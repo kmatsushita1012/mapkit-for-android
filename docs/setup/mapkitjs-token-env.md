@@ -1,6 +1,6 @@
 # MapKit JS トークンと環境変数設定
 
-このドキュメントは Apple の MapKit JS 公式情報を前提に、`mapkit-for-android` の `example` で初期化設定を環境変数経由で渡す手順をまとめたものです。
+このドキュメントは Apple の MapKit JS 公式情報を前提に、`mapkit-android` の `example` で初期化設定を環境変数経由で渡す手順をまとめたものです。
 
 ## 1. 前提
 

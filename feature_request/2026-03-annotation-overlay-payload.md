@@ -1,7 +1,7 @@
 # Feature Request: Annotation Event / Style Refactor
 
 作成日: 2026-03-23
-対象: `mapkit-for-android`
+対象: `mapkit-android`
 
 ## 方針
 - 本ファイルは「実装候補の要求仕様」を管理する。

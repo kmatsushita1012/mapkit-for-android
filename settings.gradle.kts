@@ -20,9 +20,9 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "mapkit-android"
-include(":source:mapkit-for-android-core")
-include(":source:mapkit-for-android-webview")
-include(":source:mapkit-for-android-compose")
+include(":source:mapkit-android-core")
+include(":source:mapkit-android-webview")
+include(":source:mapkit-android-compose")
 include(":source:mapkit-android")
-project(":source:mapkit-android").projectDir = file("source/mapkit-for-android")
+project(":source:mapkit-android").projectDir = file("source/mapkit-android")
 include(":example:app")

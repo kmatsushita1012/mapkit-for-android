@@ -1,12 +1,13 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     id("maven-publish")
     id("signing")
 }
 
 android {
-    namespace = "com.studiomk.mapkit"
+    namespace = "com.studiomk.mapkit.compose"
     compileSdk = 36
 
     defaultConfig {
@@ -20,6 +21,10 @@ android {
         }
     }
 
+    buildFeatures {
+        compose = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -30,18 +35,25 @@ android {
 }
 
 dependencies {
-    api(project(":source:mapkit-for-android-compose"))
+    api(project(":source:mapkit-android-core"))
+    implementation(project(":source:mapkit-android-webview"))
+    implementation(libs.androidx.core.ktx)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material3)
+    debugImplementation(libs.androidx.compose.ui.tooling)
 }
 
 publishing {
     publications {
         register<MavenPublication>("release") {
             groupId = providers.gradleProperty("POM_GROUP_ID").get()
-            artifactId = "mapkit"
+            artifactId = "mapkit-compose"
             version = providers.gradleProperty("VERSION_NAME").get()
 
             pom {
-                name.set("MapKit for Android")
+                name.set("MapKit Android Compose")
                 description.set(providers.gradleProperty("POM_DESCRIPTION").get())
                 url.set(providers.gradleProperty("POM_URL").get())
                 licenses {

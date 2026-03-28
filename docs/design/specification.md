@@ -2,7 +2,7 @@
 
 ## 0. 前提
 
-本仕様書は [main.md](/Users/matsushitakazuya/private/mapkit-for-android/docs/design/main.md) を具体化したものであり、各章を必ず **外部仕様(interface) -> 内部仕様** の順で記述する。
+本仕様書は [main.md](/Users/matsushitakazuya/private/mapkit-android/docs/design/main.md) を具体化したものであり、各章を必ず **外部仕様(interface) -> 内部仕様** の順で記述する。
 
 ---
 
@@ -237,10 +237,10 @@
 - 以後は変更差分のみ適用し、再初期化しない。
 
 #### 5.2.3 モジュール構成
-- `source:mapkit-for-android` (利用者向け集約 artifact)
-- `source:mapkit-for-android-core` (公開 API)
-- `source:mapkit-for-android-webview` (Bridge/Engine)
-- `source:mapkit-for-android-compose` (Compose ラッパ)
+- `source:mapkit-android` (利用者向け集約 artifact)
+- `source:mapkit-android-core` (公開 API)
+- `source:mapkit-android-webview` (Bridge/Engine)
+- `source:mapkit-android-compose` (Compose ラッパ)
 - `example:app` (利用例)
 
 #### 5.2.4 公開設定
