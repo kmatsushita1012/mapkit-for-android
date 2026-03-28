@@ -41,8 +41,8 @@ import com.studiomk.mapkit.model.MKMapOptions
 import com.studiomk.mapkit.model.MKMapStyle
 import com.studiomk.mapkit.model.MKOverlayStyle
 import com.studiomk.mapkit.model.MKPoiFilter
+import com.studiomk.mapkit.model.MKPointOfInterestCategoryValues
 import com.studiomk.mapkit.model.MKUserLocationOptions
-import com.studiomk.mapkit.model.PointOfInterestCategoryValues
 import java.util.UUID
 
 private data class Point(
@@ -121,8 +121,8 @@ internal fun AppScreen() {
         )
     }
     val cafeParkPoiCategorySet = setOf(
-        PointOfInterestCategoryValues.Cafe,
-        PointOfInterestCategoryValues.Park
+        MKPointOfInterestCategoryValues.Cafe,
+        MKPointOfInterestCategoryValues.Park
     )
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }

@@ -147,10 +147,9 @@ enum class MKMapLanguage {
 }
 
 typealias MKPointOfInterestCategoryValue = String
-typealias PointOfInterestCategoryValue = MKPointOfInterestCategoryValue
 
 @Suppress("MemberVisibilityCanBePrivate")
-object PointOfInterestCategoryValues {
+object MKPointOfInterestCategoryValues {
     const val ATM: MKPointOfInterestCategoryValue = "ATM"
     const val Airport: MKPointOfInterestCategoryValue = "Airport"
     const val AmusementPark: MKPointOfInterestCategoryValue = "AmusementPark"
