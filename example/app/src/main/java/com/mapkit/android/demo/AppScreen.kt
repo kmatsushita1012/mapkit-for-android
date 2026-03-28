@@ -42,6 +42,7 @@ import com.studiomk.mapkit.model.MKMapStyle
 import com.studiomk.mapkit.model.MKOverlayStyle
 import com.studiomk.mapkit.model.MKPoiFilter
 import com.studiomk.mapkit.model.MKUserLocationOptions
+import com.studiomk.mapkit.model.PointOfInterestCategoryValues
 import java.util.UUID
 
 private data class Point(
@@ -119,6 +120,10 @@ internal fun AppScreen() {
             )
         )
     }
+    val cafeParkPoiCategorySet = setOf(
+        PointOfInterestCategoryValues.Cafe,
+        PointOfInterestCategoryValues.Park
+    )
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var activeDrawMode by remember { mutableStateOf(DrawMode.None) }
@@ -544,13 +549,13 @@ internal fun AppScreen() {
                     MKPoiFilter.All -> PoiFilterPreset.all
                     MKPoiFilter.None -> PoiFilterPreset.none
                     is MKPoiFilter.Include -> {
-                        val s = f.categories.map { it.lowercase() }.toSet()
-                        if (s == setOf("cafe", "park")) PoiFilterPreset.includeCafePark else PoiFilterPreset.all
+                        val s = f.categories.toSet()
+                        if (s == cafeParkPoiCategorySet) PoiFilterPreset.includeCafePark else PoiFilterPreset.all
                     }
 
                     is MKPoiFilter.Exclude -> {
-                        val s = f.categories.map { it.lowercase() }.toSet()
-                        if (s == setOf("cafe", "park")) PoiFilterPreset.excludeCafePark else PoiFilterPreset.all
+                        val s = f.categories.toSet()
+                        if (s == cafeParkPoiCategorySet) PoiFilterPreset.excludeCafePark else PoiFilterPreset.all
                     }
                 }
                 Column(
@@ -592,8 +597,8 @@ internal fun AppScreen() {
                                 val filter = when (preset) {
                                     PoiFilterPreset.all -> MKPoiFilter.All
                                     PoiFilterPreset.none -> MKPoiFilter.None
-                                    PoiFilterPreset.includeCafePark -> MKPoiFilter.Include(listOf("cafe", "park"))
-                                    PoiFilterPreset.excludeCafePark -> MKPoiFilter.Exclude(listOf("cafe", "park"))
+                                    PoiFilterPreset.includeCafePark -> MKPoiFilter.Include(cafeParkPoiCategorySet.toList())
+                                    PoiFilterPreset.excludeCafePark -> MKPoiFilter.Exclude(cafeParkPoiCategorySet.toList())
                                 }
                                 options = options.copy(poiFilter = filter)
                             }

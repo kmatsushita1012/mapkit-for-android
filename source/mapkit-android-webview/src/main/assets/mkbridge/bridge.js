@@ -165,50 +165,12 @@
     const c = window.mapkit.PointOfInterestCategory;
     if (typeof category !== "string") return null;
     if (c[category]) return c[category];
-    const key = category.replace(/[-_ ]/g, "").toLowerCase();
-    const map = {
-      airport: c.Airport,
-      amusementpark: c.AmusementPark,
-      aquarium: c.Aquarium,
-      atm: c.ATM,
-      bakery: c.Bakery,
-      bank: c.Bank,
-      beach: c.Beach,
-      brewery: c.Brewery,
-      cafe: c.Cafe,
-      campground: c.Campground,
-      carrental: c.CarRental,
-      evcharger: c.EVCharger,
-      firestation: c.FireStation,
-      fitnesscenter: c.FitnessCenter,
-      foodmarket: c.FoodMarket,
-      gasstation: c.GasStation,
-      hospital: c.Hospital,
-      hotel: c.Hotel,
-      laundry: c.Laundry,
-      library: c.Library,
-      marina: c.Marina,
-      movieheater: c.MovieTheater,
-      museum: c.Museum,
-      nationalpark: c.NationalPark,
-      nightlife: c.Nightlife,
-      park: c.Park,
-      parking: c.Parking,
-      pharmacy: c.Pharmacy,
-      policestation: c.Police,
-      postoffice: c.PostOffice,
-      publictransport: c.PublicTransport,
-      restaurant: c.Restaurant,
-      restroom: c.Restroom,
-      school: c.School,
-      stadium: c.Stadium,
-      store: c.Store,
-      theater: c.Theater,
-      university: c.University,
-      winery: c.Winery,
-      zoo: c.Zoo,
-    };
-    return map[key] || null;
+    const normalized = category.replace(/[-_ ]/g, "").toLowerCase();
+    const matchedKey = Object.keys(c).find((k) => (
+      typeof k === "string" &&
+      k.replace(/[-_ ]/g, "").toLowerCase() === normalized
+    ));
+    return matchedKey ? c[matchedKey] : null;
   }
 
   function categoriesFromFilter(filter) {

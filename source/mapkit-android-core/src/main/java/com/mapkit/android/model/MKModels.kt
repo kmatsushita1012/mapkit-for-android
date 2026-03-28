@@ -146,11 +146,91 @@ enum class MKMapLanguage {
     en
 }
 
+typealias MKPointOfInterestCategoryValue = String
+typealias PointOfInterestCategoryValue = MKPointOfInterestCategoryValue
+
+@Suppress("MemberVisibilityCanBePrivate")
+object PointOfInterestCategoryValues {
+    const val ATM: MKPointOfInterestCategoryValue = "ATM"
+    const val Airport: MKPointOfInterestCategoryValue = "Airport"
+    const val AmusementPark: MKPointOfInterestCategoryValue = "AmusementPark"
+    const val AnimalService: MKPointOfInterestCategoryValue = "AnimalService"
+    const val Aquarium: MKPointOfInterestCategoryValue = "Aquarium"
+    const val AutomotiveRepair: MKPointOfInterestCategoryValue = "AutomotiveRepair"
+    const val Bakery: MKPointOfInterestCategoryValue = "Bakery"
+    const val Bank: MKPointOfInterestCategoryValue = "Bank"
+    const val Baseball: MKPointOfInterestCategoryValue = "Baseball"
+    const val Basketball: MKPointOfInterestCategoryValue = "Basketball"
+    const val Beach: MKPointOfInterestCategoryValue = "Beach"
+    const val Beauty: MKPointOfInterestCategoryValue = "Beauty"
+    const val Bowling: MKPointOfInterestCategoryValue = "Bowling"
+    const val Brewery: MKPointOfInterestCategoryValue = "Brewery"
+    const val Cafe: MKPointOfInterestCategoryValue = "Cafe"
+    const val Campground: MKPointOfInterestCategoryValue = "Campground"
+    const val CarRental: MKPointOfInterestCategoryValue = "CarRental"
+    const val Castle: MKPointOfInterestCategoryValue = "Castle"
+    const val ConventionCenter: MKPointOfInterestCategoryValue = "ConventionCenter"
+    const val Distillery: MKPointOfInterestCategoryValue = "Distillery"
+    const val EVCharger: MKPointOfInterestCategoryValue = "EVCharger"
+    const val Fairground: MKPointOfInterestCategoryValue = "Fairground"
+    const val FireStation: MKPointOfInterestCategoryValue = "FireStation"
+    const val Fishing: MKPointOfInterestCategoryValue = "Fishing"
+    const val FitnessCenter: MKPointOfInterestCategoryValue = "FitnessCenter"
+    const val FoodMarket: MKPointOfInterestCategoryValue = "FoodMarket"
+    const val Fortress: MKPointOfInterestCategoryValue = "Fortress"
+    const val GasStation: MKPointOfInterestCategoryValue = "GasStation"
+    const val GoKart: MKPointOfInterestCategoryValue = "GoKart"
+    const val Golf: MKPointOfInterestCategoryValue = "Golf"
+    const val Hiking: MKPointOfInterestCategoryValue = "Hiking"
+    const val Hospital: MKPointOfInterestCategoryValue = "Hospital"
+    const val Hotel: MKPointOfInterestCategoryValue = "Hotel"
+    const val Kayaking: MKPointOfInterestCategoryValue = "Kayaking"
+    const val Landmark: MKPointOfInterestCategoryValue = "Landmark"
+    const val Laundry: MKPointOfInterestCategoryValue = "Laundry"
+    const val Library: MKPointOfInterestCategoryValue = "Library"
+    const val Mailbox: MKPointOfInterestCategoryValue = "Mailbox"
+    const val Marina: MKPointOfInterestCategoryValue = "Marina"
+    const val MiniGolf: MKPointOfInterestCategoryValue = "MiniGolf"
+    const val MovieTheater: MKPointOfInterestCategoryValue = "MovieTheater"
+    const val Museum: MKPointOfInterestCategoryValue = "Museum"
+    const val MusicVenue: MKPointOfInterestCategoryValue = "MusicVenue"
+    const val NationalMonument: MKPointOfInterestCategoryValue = "NationalMonument"
+    const val NationalPark: MKPointOfInterestCategoryValue = "NationalPark"
+    const val Nightlife: MKPointOfInterestCategoryValue = "Nightlife"
+    const val Park: MKPointOfInterestCategoryValue = "Park"
+    const val Parking: MKPointOfInterestCategoryValue = "Parking"
+    const val Pharmacy: MKPointOfInterestCategoryValue = "Pharmacy"
+    const val Planetarium: MKPointOfInterestCategoryValue = "Planetarium"
+    const val Police: MKPointOfInterestCategoryValue = "Police"
+    const val PostOffice: MKPointOfInterestCategoryValue = "PostOffice"
+    const val PublicTransport: MKPointOfInterestCategoryValue = "PublicTransport"
+    const val RVPark: MKPointOfInterestCategoryValue = "RVPark"
+    const val Restaurant: MKPointOfInterestCategoryValue = "Restaurant"
+    const val Restroom: MKPointOfInterestCategoryValue = "Restroom"
+    const val RockClimbing: MKPointOfInterestCategoryValue = "RockClimbing"
+    const val School: MKPointOfInterestCategoryValue = "School"
+    const val SkatePark: MKPointOfInterestCategoryValue = "SkatePark"
+    const val Skating: MKPointOfInterestCategoryValue = "Skating"
+    const val Skiing: MKPointOfInterestCategoryValue = "Skiing"
+    const val Soccer: MKPointOfInterestCategoryValue = "Soccer"
+    const val Spa: MKPointOfInterestCategoryValue = "Spa"
+    const val Stadium: MKPointOfInterestCategoryValue = "Stadium"
+    const val Store: MKPointOfInterestCategoryValue = "Store"
+    const val Surfing: MKPointOfInterestCategoryValue = "Surfing"
+    const val Swimming: MKPointOfInterestCategoryValue = "Swimming"
+    const val Tennis: MKPointOfInterestCategoryValue = "Tennis"
+    const val Theater: MKPointOfInterestCategoryValue = "Theater"
+    const val University: MKPointOfInterestCategoryValue = "University"
+    const val Volleyball: MKPointOfInterestCategoryValue = "Volleyball"
+    const val Winery: MKPointOfInterestCategoryValue = "Winery"
+    const val Zoo: MKPointOfInterestCategoryValue = "Zoo"
+}
+
 sealed interface MKPoiFilter {
     data object All : MKPoiFilter
     data object None : MKPoiFilter
-    data class Include(val categories: List<String>) : MKPoiFilter
-    data class Exclude(val categories: List<String>) : MKPoiFilter
+    data class Include(val categories: List<MKPointOfInterestCategoryValue>) : MKPoiFilter
+    data class Exclude(val categories: List<MKPointOfInterestCategoryValue>) : MKPoiFilter
 }
 
 data class MKUserLocationOptions(
