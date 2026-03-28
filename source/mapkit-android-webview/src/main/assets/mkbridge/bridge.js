@@ -458,8 +458,8 @@
     const anchorX = clamp01(style && style.anchorX, 0.5);
     const anchorY = clamp01(style && style.anchorY, 1.0);
     return createPoint(
-      (0.5 - anchorX) * width,
-      (0.5 - anchorY) * height
+      (anchorX - 0.5) * width,
+      (anchorY - 1.0) * height
     );
   }
 
