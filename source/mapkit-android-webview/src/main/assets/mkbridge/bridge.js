@@ -410,9 +410,11 @@
     try {
       const current = state.map.region;
       if (current && current.center && current.span) {
-        const latEps = 1e-7;
-        const lngEps = 1e-7;
-        const spanEps = 1e-6;
+        // Tolerate tiny round-trip drift (JS <-> Kotlin <-> MapKit) to avoid
+        // re-applying an effectively identical region and retriggering events.
+        const latEps = 1e-5;
+        const lngEps = 1e-5;
+        const spanEps = 1e-5;
         const sameCenter =
           Math.abs(current.center.latitude - region.centerLat) <= latEps &&
           Math.abs(current.center.longitude - region.centerLng) <= lngEps;
