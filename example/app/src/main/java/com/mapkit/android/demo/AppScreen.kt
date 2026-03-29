@@ -4,6 +4,7 @@ import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -419,127 +420,169 @@ internal fun AppScreen() {
                     }
                 }
 
-                MKMapView(
-                    region = region,
-                    controller = controller,
-                    options = options,
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f),
-                    onRegionDidChange = { changed ->
-                        region = changed
-                        val center = changed.center
-                        lastEventText =
-                            "RegionDidChange(center=${center.latitude.format6()},${center.longitude.format6()})"
-                    },
-                    onMapTapped = { coordinate ->
-                        addGeometryPoint(tapAction, coordinate)
-                        lastEventText =
-                            "MapTapped(${coordinate.latitude.format6()},${coordinate.longitude.format6()})"
-                    },
-                    onLongPress = { coordinate ->
-                        addGeometryPoint(longPressAction, coordinate)
-                        lastEventText =
-                            "LongPress(${coordinate.latitude.format6()},${coordinate.longitude.format6()})"
-                    },
-                    onMapLoaded = {
-                        lastEventText = "MapLoaded"
-                    },
-                    onMapError = { cause ->
-                        lastEventText = "MapError: $cause"
-                    }
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    pointEntities.forEach { point ->
-                        MKAnnotation(
-                            id = point.id,
-                            coordinate = point.coordinate,
-                            title = point.title,
-                            subtitle = point.subtitle,
-                            isVisible = point.isVisible,
-                            isDraggable = point.isDraggable,
-                            style = point.style,
-                            onSelected = {
-                                selectedAnnotationId = point.id
-                                lastEventText = "AnnotationSelected(id=${point.id})"
-                                if (immediateDeselectOnAnnotationTap) {
-                                    controller.deselectAnnotation(animated = false)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Scrollable parent container demo",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Scroll this area vertically, then drag/pinch the map to verify gestures remain stable.",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(420.dp)
+                        ) {
+                            MKMapView(
+                                region = region,
+                                controller = controller,
+                                options = options,
+                                modifier = Modifier.fillMaxSize(),
+                                onRegionDidChange = { changed ->
+                                    region = changed
+                                    val center = changed.center
+                                    lastEventText =
+                                        "RegionDidChange(center=${center.latitude.format6()},${center.longitude.format6()})"
+                                },
+                                onMapTapped = { coordinate ->
+                                    addGeometryPoint(tapAction, coordinate)
+                                    lastEventText =
+                                        "MapTapped(${coordinate.latitude.format6()},${coordinate.longitude.format6()})"
+                                },
+                                onLongPress = { coordinate ->
+                                    addGeometryPoint(longPressAction, coordinate)
+                                    lastEventText =
+                                        "LongPress(${coordinate.latitude.format6()},${coordinate.longitude.format6()})"
+                                },
+                                onMapLoaded = {
+                                    lastEventText = "MapLoaded"
+                                },
+                                onMapError = { cause ->
+                                    lastEventText = "MapError: $cause"
                                 }
-                            },
-                            onDeselected = {
-                                if (selectedAnnotationId == point.id) {
-                                    selectedAnnotationId = null
+                            ) {
+                                pointEntities.forEach { point ->
+                                    MKAnnotation(
+                                        id = point.id,
+                                        coordinate = point.coordinate,
+                                        title = point.title,
+                                        subtitle = point.subtitle,
+                                        isVisible = point.isVisible,
+                                        isDraggable = point.isDraggable,
+                                        style = point.style,
+                                        onSelected = {
+                                            selectedAnnotationId = point.id
+                                            lastEventText = "AnnotationSelected(id=${point.id})"
+                                            if (immediateDeselectOnAnnotationTap) {
+                                                controller.deselectAnnotation(animated = false)
+                                            }
+                                        },
+                                        onDeselected = {
+                                            if (selectedAnnotationId == point.id) {
+                                                selectedAnnotationId = null
+                                            }
+                                            lastEventText = "AnnotationDeselected(id=${point.id})"
+                                        },
+                                        onDrag = { nextCoordinate ->
+                                            pointEntities = pointEntities.map {
+                                                if (it.id == point.id) {
+                                                    it.copy(coordinate = nextCoordinate)
+                                                } else {
+                                                    it
+                                                }
+                                            }
+                                        }
+                                    )
                                 }
-                                lastEventText = "AnnotationDeselected(id=${point.id})"
-                            },
-                            onDrag = { nextCoordinate ->
-                                pointEntities = pointEntities.map {
-                                    if (it.id == point.id) it.copy(coordinate = nextCoordinate) else it
+
+                                segmentEntities.forEach { segment ->
+                                    MKPolylineOverlay(
+                                        id = segment.id,
+                                        points = segment.points,
+                                        style = segment.style,
+                                        isVisible = segment.isVisible,
+                                        zIndex = segment.zIndex,
+                                        onTap = { lastEventText = "OverlayTapped(id=${segment.id})" }
+                                    )
+                                }
+                                areaEntities.forEach { area ->
+                                    MKPolygonOverlay(
+                                        id = area.id,
+                                        points = area.points,
+                                        holes = area.holes,
+                                        style = area.style,
+                                        isVisible = area.isVisible,
+                                        zIndex = area.zIndex,
+                                        onTap = { lastEventText = "OverlayTapped(id=${area.id})" }
+                                    )
+                                }
+                                circleAreaEntities.forEach { circleArea ->
+                                    MKCircleOverlay(
+                                        id = circleArea.id,
+                                        center = circleArea.center,
+                                        radiusMeter = circleArea.radiusMeter,
+                                        style = circleArea.style,
+                                        isVisible = circleArea.isVisible,
+                                        zIndex = circleArea.zIndex,
+                                        onTap = { lastEventText = "OverlayTapped(id=${circleArea.id})" }
+                                    )
+                                }
+
+                                draftSegment?.let { segment ->
+                                    MKPolylineOverlay(
+                                        id = segment.id,
+                                        points = segment.points,
+                                        style = segment.style,
+                                        isVisible = segment.isVisible,
+                                        zIndex = segment.zIndex
+                                    )
+                                }
+                                draftArea?.let { area ->
+                                    MKPolygonOverlay(
+                                        id = area.id,
+                                        points = area.points,
+                                        holes = area.holes,
+                                        style = area.style,
+                                        isVisible = area.isVisible,
+                                        zIndex = area.zIndex
+                                    )
+                                }
+                                draftCircleArea?.let { circleArea ->
+                                    MKCircleOverlay(
+                                        id = circleArea.id,
+                                        center = circleArea.center,
+                                        radiusMeter = circleArea.radiusMeter,
+                                        style = circleArea.style,
+                                        isVisible = circleArea.isVisible,
+                                        zIndex = circleArea.zIndex
+                                    )
                                 }
                             }
-                        )
-                    }
+                        }
 
-                    segmentEntities.forEach { segment ->
-                        MKPolylineOverlay(
-                            id = segment.id,
-                            points = segment.points,
-                            style = segment.style,
-                            isVisible = segment.isVisible,
-                            zIndex = segment.zIndex,
-                            onTap = { lastEventText = "OverlayTapped(id=${segment.id})" }
+                        Text(
+                            text = "Extra content below the map to keep the parent container scrollable.",
+                            style = MaterialTheme.typography.bodySmall
                         )
-                    }
-                    areaEntities.forEach { area ->
-                        MKPolygonOverlay(
-                            id = area.id,
-                            points = area.points,
-                            holes = area.holes,
-                            style = area.style,
-                            isVisible = area.isVisible,
-                            zIndex = area.zIndex,
-                            onTap = { lastEventText = "OverlayTapped(id=${area.id})" }
-                        )
-                    }
-                    circleAreaEntities.forEach { circleArea ->
-                        MKCircleOverlay(
-                            id = circleArea.id,
-                            center = circleArea.center,
-                            radiusMeter = circleArea.radiusMeter,
-                            style = circleArea.style,
-                            isVisible = circleArea.isVisible,
-                            zIndex = circleArea.zIndex,
-                            onTap = { lastEventText = "OverlayTapped(id=${circleArea.id})" }
-                        )
-                    }
-
-                    draftSegment?.let { segment ->
-                        MKPolylineOverlay(
-                            id = segment.id,
-                            points = segment.points,
-                            style = segment.style,
-                            isVisible = segment.isVisible,
-                            zIndex = segment.zIndex
-                        )
-                    }
-                    draftArea?.let { area ->
-                        MKPolygonOverlay(
-                            id = area.id,
-                            points = area.points,
-                            holes = area.holes,
-                            style = area.style,
-                            isVisible = area.isVisible,
-                            zIndex = area.zIndex
-                        )
-                    }
-                    draftCircleArea?.let { circleArea ->
-                        MKCircleOverlay(
-                            id = circleArea.id,
-                            center = circleArea.center,
-                            radiusMeter = circleArea.radiusMeter,
-                            style = circleArea.style,
-                            isVisible = circleArea.isVisible,
-                            zIndex = circleArea.zIndex
-                        )
+                        repeat(8) { index ->
+                            Text(
+                                text = "Scrollable test content ${index + 1}: Keep swiping this parent area and then interact with the map.",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
                     }
                 }
             }

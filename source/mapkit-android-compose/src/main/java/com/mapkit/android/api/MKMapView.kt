@@ -1,5 +1,6 @@
 package com.studiomk.mapkit.api
 
+import android.view.MotionEvent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
@@ -217,6 +218,23 @@ private class MKMapContentCollector : MKMapContentScope {
     }
 }
 
+private fun MKBridgeWebView.installParentScrollInterceptionGuard() {
+    setOnTouchListener { view, event ->
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN,
+            MotionEvent.ACTION_MOVE,
+            MotionEvent.ACTION_POINTER_DOWN -> {
+                view.parent?.requestDisallowInterceptTouchEvent(true)
+            }
+            MotionEvent.ACTION_UP,
+            MotionEvent.ACTION_CANCEL -> {
+                view.parent?.requestDisallowInterceptTouchEvent(false)
+            }
+        }
+        false
+    }
+}
+
 @Composable
 fun MKMapView(
     region: MKCoordinateRegion,
@@ -255,6 +273,7 @@ fun MKMapView(
         factory = { context ->
             val config = MKMapKit.currentConfig()
             MKBridgeWebView(context, mapKitConfig = config).also { webView ->
+                webView.installParentScrollInterceptionGuard()
                 webView.setEventListener { event ->
                     when (event) {
                         is MKMapEvent.MapLoaded -> latestOnMapLoaded.value?.invoke()
